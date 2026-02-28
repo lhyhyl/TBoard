@@ -1,0 +1,26 @@
+import { create } from 'zustand'
+import type { ToolType, ShapeType, PenOptions } from '../types'
+
+interface ToolState {
+  activeTool: ToolType
+  activeShape: ShapeType
+  penOptions: PenOptions
+  presentationMode: boolean
+  setTool: (tool: ToolType) => void
+  setShape: (shape: ShapeType) => void
+  setPenColor: (color: string) => void
+  setPenWidth: (width: number) => void
+  togglePresentation: () => void
+}
+
+export const useToolStore = create<ToolState>((set) => ({
+  activeTool: 'pen',
+  activeShape: 'rect',
+  penOptions: { color: '#1a1a1a', width: 3 },
+  presentationMode: false,
+  setTool: (tool) => set({ activeTool: tool }),
+  setShape: (shape) => set({ activeShape: shape }),
+  setPenColor: (color) => set((s) => ({ penOptions: { ...s.penOptions, color } })),
+  setPenWidth: (width) => set((s) => ({ penOptions: { ...s.penOptions, width } })),
+  togglePresentation: () => set((s) => ({ presentationMode: !s.presentationMode }))
+}))
