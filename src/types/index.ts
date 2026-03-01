@@ -75,6 +75,8 @@ declare global {
       // Import
       importLegacyFile: () => Promise<AppData | null>
       importJsonFile: () => Promise<{ type: string; data: unknown; fileName: string } | null>
+      // Patch board meta without sending canvasJSON
+      patchBoardMeta: (id: string, patch: Partial<Board>) => Promise<void>
     }
   }
 }

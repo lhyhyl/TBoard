@@ -39,18 +39,40 @@ function getIndexPath(storagePath: string) {
 }
 
 function readIndex(storagePath: string): WorkspaceIndex {
+  // Read categories from index.json (categories are the only shared data)
   const p = getIndexPath(storagePath)
-  if (!existsSync(p)) return { categories: [], boards: [] }
-  try {
-    return JSON.parse(readFileSync(p, 'utf-8')) as WorkspaceIndex
-  } catch {
-    return { categories: [], boards: [] }
+  let categories: WorkspaceIndex['categories'] = []
+  if (existsSync(p)) {
+    try {
+      const raw = JSON.parse(readFileSync(p, 'utf-8'))
+      categories = raw.categories ?? []
+    } catch { /* use empty */ }
   }
+
+  // Reconstruct board list by scanning boards/ — each person owns their own files
+  const boardsDir = join(storagePath, 'boards')
+  const boards: WorkspaceIndex['boards'] = []
+  if (existsSync(boardsDir)) {
+    for (const file of readdirSync(boardsDir)) {
+      if (!file.endsWith('.json')) continue
+      try {
+        const board = JSON.parse(readFileSync(join(boardsDir, file), 'utf-8')) as Board
+        // Extract meta fields only (omit canvasJSON to keep index lightweight)
+        const { canvasJSON: _canvas, ...meta } = board
+        boards.push(meta)
+      } catch { /* skip corrupt files */ }
+    }
+  }
+  // Preserve creation order
+  boards.sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0))
+
+  return { categories, boards }
 }
 
 function writeIndex(storagePath: string, data: WorkspaceIndex) {
   ensureWorkspaceDirs(storagePath)
-  writeFileSync(getIndexPath(storagePath), JSON.stringify(data, null, 2), 'utf-8')
+  // Only persist categories — board list is always reconstructed from boards/ on startup
+  writeFileSync(getIndexPath(storagePath), JSON.stringify({ categories: data.categories }, null, 2), 'utf-8')
 }
 
 function readBoard(storagePath: string, id: string): Board | null {
@@ -165,6 +187,16 @@ ipcMain.handle('write-index', (_event, data: WorkspaceIndex) => {
   const { storagePath } = loadSettings()
   if (!storagePath) return
   writeIndex(storagePath, data)
+})
+
+// Patch board meta fields without transferring canvasJSON over IPC
+ipcMain.handle('patch-board-meta', (_event, id: string, patch: Partial<Board>) => {
+  const { storagePath } = loadSettings()
+  if (!storagePath) return
+  const board = readBoard(storagePath, id)
+  if (!board) return
+  const { canvasJSON: _c, ...rest } = patch as Board
+  writeBoardFile(storagePath, { ...board, ...rest, updatedAt: Date.now() })
 })
 
 ipcMain.handle('write-board', (_event, board: Board) => {

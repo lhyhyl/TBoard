@@ -62,6 +62,17 @@ export async function deleteBoardFile(id: string): Promise<void> {
   localStorage.removeItem(`writeboard-board-${id}`)
 }
 
+export async function patchBoardMeta(id: string, patch: Partial<import('../types').Board>): Promise<void> {
+  if (window.electronAPI) {
+    return window.electronAPI.patchBoardMeta(id, patch)
+  }
+  // localStorage fallback: read, patch, write
+  const raw = localStorage.getItem(`writeboard-board-${id}`)
+  if (!raw) return
+  const board = JSON.parse(raw)
+  localStorage.setItem(`writeboard-board-${id}`, JSON.stringify({ ...board, ...patch, updatedAt: Date.now() }))
+}
+
 // ── Images ────────────────────────────────────────────
 
 export async function saveImage(dataUrl: string): Promise<string> {

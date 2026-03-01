@@ -18,5 +18,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openImageDialog: (): Promise<string | null> => ipcRenderer.invoke('open-image-dialog'),
   // Import
   importLegacyFile: (): Promise<AppData | null> => ipcRenderer.invoke('import-legacy-file'),
-  importJsonFile: (): Promise<{ type: string; data: unknown; fileName: string } | null> => ipcRenderer.invoke('import-json-file')
+  importJsonFile: (): Promise<{ type: string; data: unknown; fileName: string } | null> => ipcRenderer.invoke('import-json-file'),
+  // Patch board meta in-place without sending canvasJSON
+  patchBoardMeta: (id: string, patch: Partial<Board>): Promise<void> => ipcRenderer.invoke('patch-board-meta', id, patch)
 })

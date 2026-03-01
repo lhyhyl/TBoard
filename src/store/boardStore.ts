@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid'
 import type { Board, BoardMeta, Category } from '../types'
 import {
   readIndex, readBoard as readBoardFile, writeIndex, writeBoard as writeBoardFile,
-  deleteBoardFile, importJsonFile
+  deleteBoardFile, patchBoardMeta, importJsonFile
 } from '../services/storage'
 import type { AppData } from '../types'
 
@@ -119,7 +119,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
       activeBoardId: board.id,
       activeBoard: board
     }))
-    saveIndexDebounced(get)
+    // Board file creation is enough — boards/ scan discovers it on next startup
     writeBoardFile(board)
     return board
   },
@@ -130,24 +130,25 @@ export const useBoardStore = create<BoardState>((set, get) => ({
         m.id === id ? { ...m, ...patch, updatedAt: Date.now() } : m
       )
     }))
-    saveIndexDebounced(get)
-    // Also update the board file if it's the active one
+    // Write to the board's own file — no shared index needed
     const { activeBoard } = get()
     if (activeBoard && activeBoard.id === id) {
       const updated = { ...activeBoard, ...patch, updatedAt: Date.now() }
       set({ activeBoard: updated })
       saveBoardDebounced(updated)
+    } else {
+      // Non-active board: patch without loading canvasJSON
+      patchBoardMeta(id, patch)
     }
   },
 
   updateBoardCanvas: (id, canvasJSON, thumbnail) => {
-    // Update meta thumbnail
+    // Update meta thumbnail (in-memory only; persisted via the board file below)
     set((s) => ({
       boardMetas: s.boardMetas.map((m) =>
         m.id === id ? { ...m, thumbnail, updatedAt: Date.now() } : m
       )
     }))
-    saveIndexDebounced(get)
     // Update full board
     const { activeBoard } = get()
     if (activeBoard && activeBoard.id === id) {
@@ -171,7 +172,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
         s.activeBoardId === id ? (boardMetas[0]?.id ?? null) : s.activeBoardId
       return { boardMetas, activeBoardId, activeBoard: s.activeBoard?.id === id ? null : s.activeBoard }
     })
-    saveIndexDebounced(get)
+    // Deleting the board file is enough — no index update needed
     deleteBoardFile(id)
     // Load new active board if changed
     const { activeBoardId, activeBoard } = get()
