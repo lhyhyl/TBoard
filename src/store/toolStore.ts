@@ -6,11 +6,15 @@ interface ToolState {
   activeShape: ShapeType
   penOptions: PenOptions
   presentationMode: boolean
+  smoothStroke: boolean
+  eraserWidth: number
   setTool: (tool: ToolType) => void
   setShape: (shape: ShapeType) => void
   setPenColor: (color: string) => void
   setPenWidth: (width: number) => void
   togglePresentation: () => void
+  setSmoothStroke: (v: boolean) => void
+  setEraserWidth: (w: number) => void
 }
 
 export const useToolStore = create<ToolState>((set) => ({
@@ -18,9 +22,13 @@ export const useToolStore = create<ToolState>((set) => ({
   activeShape: 'rect',
   penOptions: { color: '#1a1a1a', width: 3 },
   presentationMode: false,
+  smoothStroke: true,
+  eraserWidth: 20,
   setTool: (tool) => set({ activeTool: tool }),
   setShape: (shape) => set({ activeShape: shape }),
   setPenColor: (color) => set((s) => ({ penOptions: { ...s.penOptions, color } })),
   setPenWidth: (width) => set((s) => ({ penOptions: { ...s.penOptions, width } })),
-  togglePresentation: () => set((s) => ({ presentationMode: !s.presentationMode }))
+  togglePresentation: () => set((s) => ({ presentationMode: !s.presentationMode })),
+  setSmoothStroke: (v) => set({ smoothStroke: v }),
+  setEraserWidth: (w) => set({ eraserWidth: w })
 }))

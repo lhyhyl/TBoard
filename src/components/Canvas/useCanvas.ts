@@ -1,6 +1,8 @@
 import { useEffect, useRef, useCallback } from 'react'
 import * as fabric from 'fabric'
 import { useToolStore } from '../../store/toolStore'
+import { smoothFabricPath } from '../../utils/smoothPath'
+import { TOOL_CURSORS } from '../../utils/cursors'
 import { useBoardStore } from '../../store/boardStore'
 import { useShortcutStore, matchesShortcut, type ShortcutAction } from '../../store/shortcutStore'
 import type { BackgroundType, ToolType } from '../../types'
@@ -98,7 +100,7 @@ export function useCanvas(
   const historyIndexRef = useRef<number>(-1)
   const skipHistoryRef = useRef(false)
 
-  const { activeTool, penOptions } = useToolStore()
+  const { activeTool, penOptions, eraserWidth } = useToolStore()
   const { activeBoardId, activeBoard, updateBoardCanvas } = useBoardStore()
 
   /* ---------- Init canvas ---------- */
@@ -125,10 +127,33 @@ export function useCanvas(
       pushHistory(canvas)
     }
 
+    // Smooth pen strokes on lift
+    const onPathCreated = (e: { path: fabric.Path }) => {
+      const { smoothStroke, activeTool } = useToolStore.getState()
+      if (!smoothStroke) return
+      if (activeTool !== 'pen' && activeTool !== 'highlighter') return
+      const path = e.path
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const raw = (path as any).path as (string | number)[][]
+      if (!raw || raw.length < 3) return
+      const smoothed = smoothFabricPath(raw)
+      // Use Fabric.js v6's internal _setPath(data, adjustPosition) so that
+      // pathOffset, width and height are all recalculated together.
+      // Direct mutation of .path leaves pathOffset stale, causing the path
+      // to render displaced (composited over white → appears colour-faded).
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(path as any)._setPath(smoothed, true)
+      path.dirty = true
+      path.setCoords()
+      canvas.requestRenderAll()
+    }
+
     // Object changed → save
     canvas.on('object:added', onCanvasChanged)
     canvas.on('object:modified', onCanvasChanged)
     canvas.on('object:removed', onCanvasChanged)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    canvas.on('path:created', onPathCreated as any)
 
     return () => {
       canvas.dispose()
@@ -165,6 +190,11 @@ export function useCanvas(
     canvas.isDrawingMode = activeTool === 'pen' || activeTool === 'eraser' || activeTool === 'highlighter'
     canvas.selection = activeTool === 'select'
 
+    // Apply matching cursor for active tool
+    const toolCursor = TOOL_CURSORS[activeTool] ?? 'default'
+    canvas.defaultCursor = toolCursor
+    canvas.freeDrawingCursor = toolCursor
+
     if (activeTool === 'pen') {
       const brush = new PressureBrush(canvas)
       brush.color = penOptions.color
@@ -174,7 +204,7 @@ export function useCanvas(
     } else if (activeTool === 'eraser') {
       const eraserBrush = new fabric.PencilBrush(canvas)
       eraserBrush.color = '#ffffff'
-      eraserBrush.width = penOptions.width * 4
+      eraserBrush.width = eraserWidth
       canvas.freeDrawingBrush = eraserBrush
     } else if (activeTool === 'highlighter') {
       const hlBrush = new PressureBrush(canvas)
@@ -422,7 +452,7 @@ export function useCanvas(
     }
 
     return undefined
-  }, [activeTool, penOptions])
+  }, [activeTool, penOptions, eraserWidth])
 
   /* ---------- History ---------- */
   function pushHistory(canvas: fabric.Canvas) {
