@@ -20,5 +20,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   importLegacyFile: (): Promise<AppData | null> => ipcRenderer.invoke('import-legacy-file'),
   importJsonFile: (): Promise<{ type: string; data: unknown; fileName: string } | null> => ipcRenderer.invoke('import-json-file'),
   // Patch board meta in-place without sending canvasJSON
-  patchBoardMeta: (id: string, patch: Partial<Board>): Promise<void> => ipcRenderer.invoke('patch-board-meta', id, patch)
+  patchBoardMeta: (id: string, patch: Partial<Board>): Promise<void> => ipcRenderer.invoke('patch-board-meta', id, patch),
+  // Export board as PDF (returns saved path, or null if cancelled)
+  exportBoardPdf: (title: string, categoryName: string, dataUrl: string): Promise<string | null> => ipcRenderer.invoke('export-board-pdf', title, categoryName, dataUrl),
+  // PDF default export path
+  setPdfExportPath: (path: string | null): Promise<void> => ipcRenderer.invoke('set-pdf-export-path', path),
+  selectPdfExportFolder: (): Promise<string | null> => ipcRenderer.invoke('select-pdf-export-folder'),
+  // Export all boards in a category to a folder
+  exportCategoryPdf: (categoryName: string, boards: { title: string; dataUrl: string }[]): Promise<string | null> =>
+    ipcRenderer.invoke('export-category-pdf', categoryName, boards)
 })

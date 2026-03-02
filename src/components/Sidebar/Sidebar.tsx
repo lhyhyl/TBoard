@@ -14,7 +14,9 @@ export function Sidebar() {
   const [editingBoardId, setEditingBoardId] = useState<string | null>(null)
   const [dragOverUncat, setDragOverUncat] = useState(false)
 
-  const uncategorized = boardMetas.filter((b) => b.categoryId === null)
+  const uncategorized = boardMetas
+    .filter((b) => b.categoryId === null)
+    .sort((a, b) => a.title.localeCompare(b.title, 'zh-CN', { numeric: true }))
 
   function handleCreateBoard(categoryId: string | null = null) {
     const board = createBoard(categoryId)

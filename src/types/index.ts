@@ -41,6 +41,7 @@ export interface AppData {
 export interface AppSettings {
   storagePath: string | null
   recentPaths: string[]
+  pdfExportPath: string | null
 }
 
 export type ToolType = 'select' | 'pen' | 'eraser' | 'text' | 'laser' | 'highlighter' | 'shape' | 'trail'
@@ -77,6 +78,13 @@ declare global {
       importJsonFile: () => Promise<{ type: string; data: unknown; fileName: string } | null>
       // Patch board meta without sending canvasJSON
       patchBoardMeta: (id: string, patch: Partial<Board>) => Promise<void>
+      // Export board as PDF (returns saved path, or null if cancelled)
+      exportBoardPdf: (title: string, categoryName: string, dataUrl: string) => Promise<string | null>
+      // PDF default export path
+      setPdfExportPath: (path: string | null) => Promise<void>
+      selectPdfExportFolder: () => Promise<string | null>
+      // Export all boards in a category to a folder
+      exportCategoryPdf: (categoryName: string, boards: { title: string; dataUrl: string }[]) => Promise<string | null>
     }
   }
 }

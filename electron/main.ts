@@ -1,5 +1,5 @@
-import { app, BrowserWindow, ipcMain, dialog, nativeImage } from 'electron'
-import { join, basename } from 'path'
+import { app, BrowserWindow, ipcMain, dialog, nativeImage, shell } from 'electron'
+import { join, basename, dirname } from 'path'
 import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync, unlinkSync } from 'fs'
 import type { AppSettings, WorkspaceIndex, Board, AppData } from '../src/types'
 
@@ -13,11 +13,13 @@ function getSettingsPath() {
 
 function loadSettings(): AppSettings {
   const p = getSettingsPath()
-  if (!existsSync(p)) return { storagePath: null, recentPaths: [] }
+  if (!existsSync(p)) return { storagePath: null, recentPaths: [], pdfExportPath: null }
   try {
-    return JSON.parse(readFileSync(p, 'utf-8')) as AppSettings
+    const s = JSON.parse(readFileSync(p, 'utf-8')) as AppSettings
+    if (s.pdfExportPath === undefined) s.pdfExportPath = null
+    return s
   } catch {
-    return { storagePath: null, recentPaths: [] }
+    return { storagePath: null, recentPaths: [], pdfExportPath: null }
   }
 }
 
@@ -290,6 +292,119 @@ ipcMain.handle('import-json-file', async (event): Promise<{ type: string; data: 
   } catch {
     return null
   }
+})
+
+// ── IPC: Export PDF ───────────────────────────────────────────────────
+
+async function writePdf(pdfPath: string, dataUrl: string): Promise<void> {
+  const tmpPath = join(app.getPath('temp'), `tboard-export-${Date.now()}.html`)
+  const html = `<!DOCTYPE html><html>
+<head><style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; background: white; }
+img { width: 100%; height: auto; display: block; }
+</style></head>
+<body><img src="${dataUrl}" /></body>
+</html>`
+  writeFileSync(tmpPath, html, 'utf-8')
+  const win = new BrowserWindow({ show: false, webPreferences: { sandbox: false, contextIsolation: false } })
+  try {
+    await win.loadFile(tmpPath)
+    const pdfBuffer = await win.webContents.printToPDF({
+      printBackground: true, landscape: true, pageSize: 'A4'
+    })
+    writeFileSync(pdfPath, pdfBuffer)
+  } finally {
+    win.destroy()
+    try { unlinkSync(tmpPath) } catch { /* ignore */ }
+  }
+}
+
+ipcMain.handle('export-board-pdf', async (event, title: string, categoryName: string, dataUrl: string): Promise<string | null> => {
+  const settings = loadSettings()
+  if (!settings.storagePath) throw new Error('No storage path configured')
+
+  const safeName = (title || 'board').replace(/[\\/:*?"<>|]/g, '_').trim() || 'board'
+  const safeCat = (categoryName || '').replace(/[\\/:*?"<>|]/g, '_').trim()
+
+  // Determine export directory
+  let exportDir: string | null = settings.pdfExportPath ?? null
+
+  if (!exportDir) {
+    // No default path — show save dialog, pre-fill to desktop/{category}/{name}.pdf
+    const win = BrowserWindow.fromWebContents(event.sender)
+    const defaultPath = safeCat
+      ? join(app.getPath('desktop'), safeCat, `${safeName}.pdf`)
+      : join(app.getPath('desktop'), `${safeName}.pdf`)
+    const result = await dialog.showSaveDialog(win!, {
+      title: '导出 PDF',
+      defaultPath,
+      filters: [{ name: 'PDF 文件', extensions: ['pdf'] }]
+    })
+    if (result.canceled || !result.filePath) return null
+    const pdfPath = result.filePath
+    mkdirSync(dirname(pdfPath), { recursive: true })
+    await writePdf(pdfPath, dataUrl)
+    shell.showItemInFolder(pdfPath)
+    return pdfPath
+  }
+
+  // Has default dir — auto-save to {exportDir}/{category}/{name}.pdf
+  const pdfDir = safeCat ? join(exportDir, safeCat) : exportDir
+  mkdirSync(pdfDir, { recursive: true })
+  const pdfPath = join(pdfDir, `${safeName}.pdf`)
+  await writePdf(pdfPath, dataUrl)
+  shell.showItemInFolder(pdfPath)
+  return pdfPath
+})
+
+ipcMain.handle('set-pdf-export-path', (_event, path: string | null) => {
+  const settings = loadSettings()
+  settings.pdfExportPath = path
+  saveSettings(settings)
+})
+
+ipcMain.handle('select-pdf-export-folder', async (event): Promise<string | null> => {
+  const win = BrowserWindow.fromWebContents(event.sender)
+  const result = await dialog.showOpenDialog(win!, {
+    title: '选择 PDF 默认导出文件夹',
+    properties: ['openDirectory', 'createDirectory']
+  })
+  if (result.canceled || result.filePaths.length === 0) return null
+  return result.filePaths[0]
+})
+
+ipcMain.handle('export-category-pdf', async (
+  event,
+  categoryName: string,
+  boards: { title: string; dataUrl: string }[]
+): Promise<string | null> => {
+  const settings = loadSettings()
+  const safeCat = (categoryName || 'export').replace(/[\\/:*?"<>|]/g, '_').trim() || 'export'
+
+  let exportDir: string | null = settings.pdfExportPath ?? null
+  if (!exportDir) {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    const result = await dialog.showOpenDialog(win!, {
+      title: `导出「${categoryName}」全部白板到文件夹`,
+      defaultPath: app.getPath('desktop'),
+      properties: ['openDirectory', 'createDirectory']
+    })
+    if (result.canceled || result.filePaths.length === 0) return null
+    exportDir = result.filePaths[0]
+  }
+
+  const pdfDir = join(exportDir, safeCat)
+  mkdirSync(pdfDir, { recursive: true })
+
+  for (const { title, dataUrl } of boards) {
+    if (!dataUrl) continue
+    const safeName = (title || 'board').replace(/[\\/:*?"<>|]/g, '_').trim() || 'board'
+    await writePdf(join(pdfDir, `${safeName}.pdf`), dataUrl)
+  }
+
+  shell.showItemInFolder(pdfDir)
+  return pdfDir
 })
 
 // ── App lifecycle ─────────────────────────────────────────────────────

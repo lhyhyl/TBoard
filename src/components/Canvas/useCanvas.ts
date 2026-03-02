@@ -755,5 +755,23 @@ export function useCanvas(
     }
   }, [undo, redo])
 
-  return { fabricRef, undo, redo, clearCanvas, insertImage, insertText, toggleLockSelected }
+  /* ---------- Export as PDF ---------- */
+  const exportAsPdf = useCallback(async (): Promise<void> => {
+    const canvas = fabricRef.current
+    if (!canvas || !window.electronAPI) return
+    const { activeBoard, categories } = useBoardStore.getState()
+    const title = activeBoard?.title || 'board'
+    const category = categories.find((c) => c.id === activeBoard?.categoryId)
+    const categoryName = category?.name || ''
+    const dataUrl = canvas.toDataURL({ format: 'png', multiplier: 2 })
+    try {
+      const saved = await window.electronAPI.exportBoardPdf(title, categoryName, dataUrl)
+      if (!saved) return // user cancelled the dialog
+    } catch (err) {
+      console.error('PDF export failed:', err)
+      alert('PDF 导出失败！')
+    }
+  }, [])
+
+  return { fabricRef, undo, redo, clearCanvas, insertImage, insertText, toggleLockSelected, exportAsPdf }
 }

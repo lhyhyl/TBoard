@@ -16,7 +16,7 @@ function CanvasArea() {
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [size, setSize] = useState({ width: 800, height: 600 })
-  const { undo, redo, clearCanvas, insertImage, insertText, toggleLockSelected } = useCanvas(canvasRef, size.width, size.height)
+  const { undo, redo, clearCanvas, insertImage, insertText, toggleLockSelected, exportAsPdf } = useCanvas(canvasRef, size.width, size.height)
   const { importFromJson } = useBoardStore()
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -133,6 +133,7 @@ function CanvasArea() {
         onInsertImage={insertImage}
         onImportJson={importFromJson}
         onToggleLock={toggleLockSelected}
+        onExportPdf={exportAsPdf}
         onOpenSettings={() => setSettingsOpen(true)}
       />
       <div ref={containerRef} className="flex-1 overflow-hidden relative" onContextMenu={handleCanvasContextMenu}>
