@@ -64,7 +64,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
       const meta: BoardMeta = {
         id, title: '我的白板', categoryId: null, tags: [],
         thumbnail: '', createdAt: now, updatedAt: now,
-        headerText: '', headerFont: '', headerFontSize: 18, background: 'blank'
+        headerText: '跬步考研', headerFont: 'Georgia', headerFontSize: 34, background: 'blank'
       }
       const board: Board = { ...meta, canvasJSON: '' }
       data.boards.push(meta)
@@ -114,10 +114,21 @@ export const useBoardStore = create<BoardState>((set, get) => ({
 
   createBoard: (categoryId = null) => {
     const now = Date.now()
+
+    // Auto-title: find boards in the same category matching "第N题" and increment
+    const siblings = get().boardMetas.filter((m) => m.categoryId === categoryId)
+    const numPattern = /第\s*(\d+)\s*题/
+    let maxNum = 0
+    for (const m of siblings) {
+      const match = m.title.match(numPattern)
+      if (match) maxNum = Math.max(maxNum, parseInt(match[1], 10))
+    }
+    const title = maxNum > 0 ? `第${maxNum + 1}题` : '新白板'
+
     const meta: BoardMeta = {
-      id: uuidv4(), title: '新白板', categoryId, tags: [],
+      id: uuidv4(), title, categoryId, tags: [],
       thumbnail: '', createdAt: now, updatedAt: now,
-      headerText: '', headerFont: '', headerFontSize: 18, background: 'blank'
+      headerText: '跬步考研', headerFont: 'Georgia', headerFontSize: 34, background: 'blank'
     }
     const board: Board = { ...meta, canvasJSON: '' }
     set((s) => ({
