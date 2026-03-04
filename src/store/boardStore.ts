@@ -64,7 +64,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
       const meta: BoardMeta = {
         id, title: '我的白板', categoryId: null, tags: [],
         thumbnail: '', createdAt: now, updatedAt: now,
-        headerText: '', background: 'blank'
+        headerText: '', headerFont: '', headerFontSize: 18, background: 'blank'
       }
       const board: Board = { ...meta, canvasJSON: '' }
       data.boards.push(meta)
@@ -76,6 +76,8 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     // Compat: fill in defaults for old boards missing new fields
     for (const b of data.boards) {
       if (b.headerText === undefined) b.headerText = ''
+      if (b.headerFont === undefined) b.headerFont = ''
+      if ((b.headerFontSize as any) === undefined) b.headerFontSize = 18
       if (b.background === undefined) (b as any).background = 'blank'
     }
 
@@ -86,6 +88,8 @@ export const useBoardStore = create<BoardState>((set, get) => ({
       const board = await readBoardFile(activeBoardId)
       if (board) {
         if (board.headerText === undefined) board.headerText = ''
+        if (board.headerFont === undefined) board.headerFont = ''
+        if ((board.headerFontSize as any) === undefined) board.headerFontSize = 18
         if (board.background === undefined) (board as any).background = 'blank'
         set({ activeBoard: board })
       }
@@ -96,6 +100,8 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     const board = await readBoardFile(id)
     if (board) {
       if (board.headerText === undefined) board.headerText = ''
+      if (board.headerFont === undefined) board.headerFont = ''
+      if ((board.headerFontSize as any) === undefined) board.headerFontSize = 18
       if (board.background === undefined) (board as any).background = 'blank'
       set({ activeBoard: board })
     }
@@ -111,7 +117,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     const meta: BoardMeta = {
       id: uuidv4(), title: '新白板', categoryId, tags: [],
       thumbnail: '', createdAt: now, updatedAt: now,
-      headerText: '', background: 'blank'
+      headerText: '', headerFont: '', headerFontSize: 18, background: 'blank'
     }
     const board: Board = { ...meta, canvasJSON: '' }
     set((s) => ({

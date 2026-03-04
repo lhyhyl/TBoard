@@ -17,6 +17,8 @@ export interface BoardMeta {
   createdAt: number
   updatedAt: number
   headerText: string
+  headerFont: string
+  headerFontSize: number
   background: BackgroundType
 }
 
