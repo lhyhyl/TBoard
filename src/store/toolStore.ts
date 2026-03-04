@@ -20,7 +20,7 @@ interface ToolState {
 export const useToolStore = create<ToolState>((set) => ({
   activeTool: 'pen',
   activeShape: 'rect',
-  penOptions: { color: '#1a1a1a', width: 3 },
+  penOptions: { color: '#000000', width: 3 },
   presentationMode: false,
   smoothStroke: true,
   eraserWidth: 20,

@@ -2,8 +2,8 @@ import { useToolStore } from '../../store/toolStore'
 import { useShallow } from 'zustand/react/shallow'
 
 const PRESET_COLORS = [
-  '#1a1a1a', '#ef4444', '#f97316', '#eab308',
-  '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899'
+  '#000000', '#dc2626', '#ea580c', '#ca8a04',
+  '#16a34a', '#2563eb', '#7c3aed', '#db2777'
 ]
 
 const WIDTHS = [2, 4, 8, 14]
