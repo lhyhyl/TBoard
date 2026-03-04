@@ -15,20 +15,11 @@ class PressureBrush extends fabric.PencilBrush {
   pressureWidth = 3
 
   onMouseDown(pointer: fabric.Point, ev: fabric.TPointerEventInfo) {
-    const pe = ev.e as PointerEvent
-    if (pe.pressure && pe.pressure > 0) {
-      this.width = this.pressureWidth * (0.3 + pe.pressure * 0.7)
-    } else {
-      this.width = this.pressureWidth
-    }
+    this.width = this.pressureWidth
     return super.onMouseDown(pointer, ev)
   }
 
   onMouseMove(pointer: fabric.Point, ev: fabric.TPointerEventInfo) {
-    const pe = ev.e as PointerEvent
-    if (pe.pressure && pe.pressure > 0) {
-      this.width = this.pressureWidth * (0.3 + pe.pressure * 0.7)
-    }
     return super.onMouseMove(pointer, ev)
   }
 }
