@@ -93,6 +93,7 @@ export function useCanvas(
 
   const { activeTool, penOptions, eraserWidth } = useToolStore()
   const { activeBoardId, activeBoard, updateBoardCanvas } = useBoardStore()
+  const loadedIdRef = useRef<string | null>(null)
 
   /* ---------- Init canvas ---------- */
   useEffect(() => {
@@ -107,12 +108,14 @@ export function useCanvas(
     })
 
     fabricRef.current = canvas
+    loadedIdRef.current = null // Reset on new ID
 
-    // Load board data if exists
-    if (activeBoard?.canvasJSON && activeBoard.canvasJSON !== '') {
+    // Load board data if it's already available in store
+    if (activeBoard?.id === activeBoardId && activeBoard.canvasJSON) {
       canvas.loadFromJSON(JSON.parse(activeBoard.canvasJSON)).then(() => {
         canvas.renderAll()
         pushHistory(canvas)
+        loadedIdRef.current = activeBoardId
       })
     } else {
       pushHistory(canvas)
@@ -152,6 +155,23 @@ export function useCanvas(
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeBoardId])
+
+  /* ---------- Handle async loading of board data ---------- */
+  useEffect(() => {
+    const canvas = fabricRef.current
+    if (!canvas || !activeBoard || activeBoard.id !== activeBoardId) return
+    if (loadedIdRef.current === activeBoardId) return // Already loaded
+
+    if (activeBoard.canvasJSON) {
+      canvas.loadFromJSON(JSON.parse(activeBoard.canvasJSON)).then(() => {
+        canvas.renderAll()
+        pushHistory(canvas)
+        loadedIdRef.current = activeBoardId
+      })
+    } else {
+      loadedIdRef.current = activeBoardId
+    }
+  }, [activeBoard, activeBoardId])
 
   /* ---------- Resize canvas when container changes ---------- */
   useEffect(() => {
@@ -443,7 +463,7 @@ export function useCanvas(
     }
 
     return undefined
-  }, [activeTool, penOptions, eraserWidth])
+  }, [activeTool, penOptions, eraserWidth, activeBoardId])
 
   /* ---------- History ---------- */
   function pushHistory(canvas: fabric.Canvas) {
@@ -549,12 +569,15 @@ export function useCanvas(
 
     const onBeforeRender = () => {
       const ctx = canvas.getContext() as unknown as CanvasRenderingContext2D
-      // Fill white base first, then draw pattern
-      ctx.save()
-      ctx.fillStyle = '#ffffff'
-      ctx.fillRect(0, 0, canvas.width!, canvas.height!)
-      ctx.restore()
-      drawBackgroundPattern(ctx, bgType, canvas.viewportTransform!, canvas.width!, canvas.height!)
+      if (bgType !== 'blank') {
+        // Only fill background if we have a pattern (grid/lines/dots)
+        ctx.save()
+        ctx.setTransform(1, 0, 0, 1, 0, 0) // Reset to device pixels for full fill
+        ctx.fillStyle = '#ffffff'
+        ctx.fillRect(0, 0, canvas.width!, canvas.height!)
+        ctx.restore()
+        drawBackgroundPattern(ctx, bgType, canvas.viewportTransform!, canvas.width!, canvas.height!)
+      }
     }
 
     canvas.on('before:render', onBeforeRender)

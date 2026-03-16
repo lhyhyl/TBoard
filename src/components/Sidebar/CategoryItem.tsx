@@ -7,12 +7,13 @@ import type { Category } from '../../types'
 interface CategoryItemProps {
   category: Category
   editingBoardId?: string | null
+  onSelectBoard?: (id: string) => void
   onCreateBoard?: (categoryId: string) => void
   onEditDone?: () => void
 }
 
-export function CategoryItem({ category, editingBoardId, onCreateBoard, onEditDone }: CategoryItemProps) {
-  const { boardMetas, activeBoardId, updateCategory, deleteCategory, setActiveBoard, updateBoardMeta } =
+export function CategoryItem({ category, editingBoardId, onSelectBoard, onCreateBoard, onEditDone }: CategoryItemProps) {
+  const { boardMetas, activeBoardId, updateCategory, deleteCategory, updateBoardMeta } =
     useBoardStore()
   const [collapsed, setCollapsed] = useState(false)
   const [editing, setEditing] = useState(false)
@@ -162,7 +163,7 @@ export function CategoryItem({ category, editingBoardId, onCreateBoard, onEditDo
             boards={catBoards}
             activeBoardId={activeBoardId}
             editingBoardId={editingBoardId}
-            onSelect={setActiveBoard}
+            onSelect={onSelectBoard}
             onEditDone={onEditDone}
           />
         </div>

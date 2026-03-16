@@ -137,7 +137,6 @@ function CanvasArea() {
         onOpenSettings={() => setSettingsOpen(true)}
       />
       <div ref={containerRef} className="flex-1 overflow-hidden relative" onContextMenu={handleCanvasContextMenu}>
-        <BoardHeader />
         <WhiteBoard
           width={size.width}
           height={size.height}

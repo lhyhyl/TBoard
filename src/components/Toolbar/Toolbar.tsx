@@ -6,6 +6,7 @@ import { openImageDialog } from '../../services/storage'
 import type { ToolType, ShapeType, BackgroundType } from '../../types'
 import { ToolButton } from './ToolButton'
 import { PenOptions } from './PenOptions'
+import { BoardHeader } from '../Canvas/BoardHeader'
 
 // Simple inline SVG icons
 const Icons = {
@@ -285,6 +286,10 @@ export function Toolbar({ onUndo, onRedo, onClear, onInsertImage, onImportJson, 
           <PenOptions />
         </div>
       )}
+
+      <div className="ml-4 border-l border-gray-100 pl-4">
+        <BoardHeader />
+      </div>
 
       <div className="flex-1" />
 

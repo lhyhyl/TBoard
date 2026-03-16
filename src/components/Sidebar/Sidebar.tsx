@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useBoardStore } from '../../store/boardStore'
+import { useToolStore } from '../../store/toolStore'
 import { CategoryItem } from './CategoryItem'
 import { BoardList } from './BoardList'
 
@@ -10,6 +11,8 @@ export function Sidebar() {
     importFromFolder
   } = useBoardStore()
 
+  const { setTool } = useToolStore()
+
   const [newCatName, setNewCatName] = useState('')
   const [showCatInput, setShowCatInput] = useState(false)
   const [editingBoardId, setEditingBoardId] = useState<string | null>(null)
@@ -19,9 +22,15 @@ export function Sidebar() {
     .filter((b) => b.categoryId === null)
     .sort((a, b) => a.title.localeCompare(b.title, 'zh-CN', { numeric: true }))
 
+  function handleSelectBoard(id: string) {
+    setActiveBoard(id)
+    setTool('pen')
+  }
+
   function handleCreateBoard(categoryId: string | null = null) {
     const board = createBoard(categoryId)
     setEditingBoardId(board.id)
+    setTool('pen')
   }
 
   function handleCreateCategory() {
@@ -90,7 +99,7 @@ export function Sidebar() {
               boards={uncategorized}
               activeBoardId={activeBoardId}
               editingBoardId={editingBoardId}
-              onSelect={setActiveBoard}
+              onSelect={handleSelectBoard}
               onEditDone={() => setEditingBoardId(null)}
             />
           </div>
@@ -102,6 +111,7 @@ export function Sidebar() {
             key={cat.id}
             category={cat}
             editingBoardId={editingBoardId}
+            onSelectBoard={handleSelectBoard}
             onCreateBoard={handleCreateBoard}
             onEditDone={() => setEditingBoardId(null)}
           />

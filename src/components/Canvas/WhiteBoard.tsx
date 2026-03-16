@@ -11,7 +11,7 @@ interface WhiteBoardProps {
 export function WhiteBoard({ canvasRef, width, height, onDrop }: WhiteBoardProps) {
   return (
     <div
-      className="w-full h-full overflow-hidden bg-white"
+      className="w-full h-full overflow-hidden bg-transparent"
       onDrop={onDrop}
       onDragOver={(e) => e.preventDefault()}
     >

@@ -73,7 +73,7 @@ export function BoardHeader() {
   }, [activeBoardId, headerFontSize, updateBoardMeta])
 
   return (
-    <div className="absolute top-2 left-3 z-10 flex items-center gap-1 group">
+    <div className="flex items-center gap-1 group">
       {editing ? (
         <input
           ref={inputRef}
@@ -82,16 +82,16 @@ export function BoardHeader() {
           onBlur={save}
           onKeyDown={handleKeyDown}
           style={{ fontFamily, fontSize: headerFontSize }}
-          className="font-bold bg-white/80 backdrop-blur-sm border border-gray-300 rounded px-2 py-0.5 outline-none focus:border-indigo-400 text-gray-800 min-w-[200px]"
-          placeholder="输入标题..."
+          className="font-bold bg-gray-100 border border-indigo-300 rounded px-2 py-0.5 outline-none focus:border-indigo-500 text-gray-800 min-w-[150px]"
+          placeholder="标题..."
         />
       ) : (
         <span
           className={[
-            'font-bold px-2 py-0.5 rounded transition-colors cursor-pointer',
+            'font-bold px-2 py-0.5 rounded transition-colors cursor-pointer border border-transparent',
             headerText
-              ? 'text-gray-800 bg-white/60 group-hover:bg-white/80'
-              : 'text-gray-400 bg-white/40 group-hover:bg-white/60'
+              ? 'text-gray-700 hover:bg-gray-100 hover:border-gray-200'
+              : 'text-gray-300 hover:text-gray-500 hover:bg-gray-100 hover:border-gray-200'
           ].join(' ')}
           style={{ fontFamily, fontSize: headerFontSize }}
           onClick={() => setEditing(true)}
@@ -100,52 +100,46 @@ export function BoardHeader() {
         </span>
       )}
 
-      {/* Size controls — visible on hover */}
-      <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity bg-white/80 rounded border border-gray-200 shadow-sm">
+      {/* Size & Font controls — visible on hover */}
+      <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity bg-white rounded border border-gray-200 shadow-sm overflow-hidden h-7">
         <button
           title="缩小字号"
           onClick={(e) => { e.stopPropagation(); adjustSize(-2) }}
-          className="w-5 h-6 flex items-center justify-center text-gray-500 hover:text-indigo-600 text-sm leading-none"
+          className="w-5 h-full flex items-center justify-center text-gray-400 hover:text-indigo-600 hover:bg-gray-50 text-sm"
         >−</button>
-        <span className="text-xs text-gray-600 w-7 text-center select-none">{headerFontSize}</span>
+        <span className="text-[10px] text-gray-500 w-6 text-center select-none font-mono">{headerFontSize}</span>
         <button
           title="放大字号"
           onClick={(e) => { e.stopPropagation(); adjustSize(2) }}
-          className="w-5 h-6 flex items-center justify-center text-gray-500 hover:text-indigo-600 text-sm leading-none"
+          className="w-5 h-full flex items-center justify-center text-gray-400 hover:text-indigo-600 hover:bg-gray-50 text-sm"
         >+</button>
-      </div>
-
-      {/* Font picker button — visible on hover */}
-      <div
-        ref={fontPickerRef}
-        className="relative opacity-0 group-hover:opacity-100 transition-opacity"
-      >
-        <button
-          title="选择字体"
-          onClick={(e) => { e.stopPropagation(); setShowFontPicker((v) => !v) }}
-          className="w-6 h-6 flex items-center justify-center rounded bg-white/80 hover:bg-white text-gray-500 hover:text-indigo-600 text-xs font-bold shadow-sm border border-gray-200"
-          style={{ fontFamily: headerFont ? fontFamily : 'inherit' }}
-        >
-          A
-        </button>
-
-        {showFontPicker && (
-          <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50 min-w-[130px]">
-            {FONTS.map((f) => (
-              <button
-                key={f.id}
-                onClick={() => handleFontSelect(f.id)}
-                className={[
-                  'w-full px-3 py-1.5 text-left text-sm hover:bg-indigo-50 transition-colors',
-                  headerFont === f.id ? 'text-indigo-700 bg-indigo-50' : 'text-gray-700'
-                ].join(' ')}
-                style={{ fontFamily: f.family }}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-        )}
+        <div className="w-px h-3 bg-gray-200 mx-0.5" />
+        <div ref={fontPickerRef} className="relative h-full">
+          <button
+            onClick={(e) => { e.stopPropagation(); setShowFontPicker((v) => !v) }}
+            className="w-6 h-full flex items-center justify-center hover:bg-gray-50 text-gray-400 hover:text-indigo-600 text-[10px] font-bold"
+            style={{ fontFamily: headerFont ? fontFamily : 'inherit' }}
+          >
+            A
+          </button>
+          {showFontPicker && (
+            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl py-1 z-[200] min-w-[120px]">
+              {FONTS.map((f) => (
+                <button
+                  key={f.id}
+                  onClick={() => handleFontSelect(f.id)}
+                  className={[
+                    'w-full px-3 py-1 text-left text-xs hover:bg-indigo-50 transition-colors',
+                    headerFont === f.id ? 'text-indigo-700 bg-indigo-50' : 'text-gray-600'
+                  ].join(' ')}
+                  style={{ fontFamily: f.family }}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

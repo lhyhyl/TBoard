@@ -32,6 +32,7 @@ interface BoardState {
 
 let indexSaveTimer: ReturnType<typeof setTimeout> | null = null
 let boardSaveTimer: ReturnType<typeof setTimeout> | null = null
+let pendingBoard: Board | null = null
 
 function saveIndexDebounced(state: () => BoardState) {
   if (indexSaveTimer) clearTimeout(indexSaveTimer)
@@ -42,10 +43,21 @@ function saveIndexDebounced(state: () => BoardState) {
 }
 
 function saveBoardDebounced(board: Board) {
+  pendingBoard = board
   if (boardSaveTimer) clearTimeout(boardSaveTimer)
   boardSaveTimer = setTimeout(() => {
     writeBoardFile(board)
-  }, 1000)
+    pendingBoard = null
+  }, 200)
+}
+
+function flushSave() {
+  if (boardSaveTimer && pendingBoard) {
+    clearTimeout(boardSaveTimer)
+    writeBoardFile(pendingBoard)
+    boardSaveTimer = null
+    pendingBoard = null
+  }
 }
 
 export const useBoardStore = create<BoardState>((set, get) => ({
@@ -109,6 +121,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
   },
 
   setActiveBoard: (id) => {
+    flushSave()
     set({ activeBoardId: id, activeBoard: null })
     get().loadBoardCanvas(id)
   },
