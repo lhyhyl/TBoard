@@ -407,6 +407,83 @@ ipcMain.handle('export-category-pdf', async (
   return pdfDir
 })
 
+// ── IPC: Import folder ────────────────────────────────────────────────
+
+ipcMain.handle('import-workspace-folder', async (event): Promise<{ success: boolean; count: number }> => {
+  const win = BrowserWindow.fromWebContents(event.sender)
+  const settings = loadSettings()
+  if (!settings.storagePath) return { success: false, count: 0 }
+
+  const result = await dialog.showOpenDialog(win!, {
+    title: '选择包含 index.json 和 boards/ 的导入文件夹',
+    properties: ['openDirectory']
+  })
+  if (result.canceled || result.filePaths.length === 0) return { success: false, count: 0 }
+
+  const sourceDir = result.filePaths[0]
+  const currentDir = settings.storagePath
+
+  try {
+    const sourceIndexFile = getIndexPath(sourceDir)
+    const sourceBoardsDir = join(sourceDir, 'boards')
+    const sourceImagesDir = join(sourceDir, 'images')
+
+    // Read source data
+    let sourceIndex: WorkspaceIndex = { categories: [], boards: [] }
+    if (existsSync(sourceIndexFile)) {
+      const raw = JSON.parse(readFileSync(sourceIndexFile, 'utf-8'))
+      sourceIndex.categories = raw.categories ?? []
+    }
+
+    // Read current data to merge
+    const currentIndex = readIndex(currentDir)
+    const currentCategoryIds = new Set(currentIndex.categories.map(c => c.id))
+
+    // 1. Merge categories
+    for (const cat of sourceIndex.categories) {
+      if (!currentCategoryIds.has(cat.id)) {
+        currentIndex.categories.push(cat)
+      }
+    }
+    writeIndex(currentDir, currentIndex)
+
+    // 2. Import boards and images
+    let importCount = 0
+    if (existsSync(sourceBoardsDir)) {
+      ensureWorkspaceDirs(currentDir)
+      const currentBoardsDir = join(currentDir, 'boards')
+      const currentImagesDir = join(currentDir, 'images')
+
+      for (const file of readdirSync(sourceBoardsDir)) {
+        if (!file.endsWith('.json')) continue
+        const srcBoardPath = join(sourceBoardsDir, file)
+        const destBoardPath = join(currentBoardsDir, file)
+        
+        // Always copy board files (overwrite if same ID, as we treat this as a fresh import)
+        const boardData = readFileSync(srcBoardPath, 'utf-8')
+        writeFileSync(destBoardPath, boardData, 'utf-8')
+        importCount++
+      }
+
+      // 3. Copy images
+      if (existsSync(sourceImagesDir)) {
+        for (const file of readdirSync(sourceImagesDir)) {
+          const srcImgPath = join(sourceImagesDir, file)
+          const destImgPath = join(currentImagesDir, file)
+          if (!existsSync(destImgPath)) {
+             writeFileSync(destImgPath, readFileSync(srcImgPath))
+          }
+        }
+      }
+    }
+
+    return { success: true, count: importCount }
+  } catch (err) {
+    console.error('Import failed:', err)
+    return { success: false, count: 0 }
+  }
+})
+
 // ── App lifecycle ─────────────────────────────────────────────────────
 
 app.whenReady().then(() => {

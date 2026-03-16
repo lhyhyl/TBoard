@@ -27,6 +27,7 @@ interface BoardState {
   updateCategory: (id: string, patch: Partial<Category>) => void
   deleteCategory: (id: string) => void
   importFromJson: () => Promise<number>
+  importFromFolder: () => Promise<number>
 }
 
 let indexSaveTimer: ReturnType<typeof setTimeout> | null = null
@@ -269,6 +270,15 @@ export const useBoardStore = create<BoardState>((set, get) => ({
       writeBoardFile(board)
     }
     return newBoards.length
+  },
+
+  importFromFolder: async () => {
+    const { importWorkspaceFolder } = await import('../services/storage')
+    const result = await importWorkspaceFolder()
+    if (result.success && result.count > 0) {
+      await get().loadAll()
+    }
+    return result.count
   },
 
   createCategory: (name, color = '#6366f1') => {

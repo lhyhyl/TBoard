@@ -78,6 +78,7 @@ declare global {
       // Import
       importLegacyFile: () => Promise<AppData | null>
       importJsonFile: () => Promise<{ type: string; data: unknown; fileName: string } | null>
+      importWorkspaceFolder: () => Promise<{ success: boolean; count: number }>
       // Patch board meta without sending canvasJSON
       patchBoardMeta: (id: string, patch: Partial<Board>) => Promise<void>
       // Export board as PDF (returns saved path, or null if cancelled)

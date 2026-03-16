@@ -23,18 +23,30 @@ interface Props {
 export function SettingsModal({ open, onClose }: Props) {
   const { shortcuts, setShortcut, resetShortcuts } = useShortcutStore()
   const [recording, setRecording] = useState<ShortcutAction | null>(null)
-  const [activeTab, setActiveTab] = useState<'shortcuts' | 'export'>('shortcuts')
+  const [activeTab, setActiveTab] = useState<'general' | 'shortcuts' | 'export'>('general')
   const [pdfPath, setPdfPath] = useState<string>('')
   const [pdfPathSaved, setPdfPathSaved] = useState(false)
+  const [storagePath, setStoragePath] = useState<string>('')
 
-  // Load current pdf export path on open
+  // Load current settings on open
   useEffect(() => {
     if (!open) return
     getSettings().then((s) => {
       setPdfPath(s.pdfExportPath ?? '')
+      setStoragePath(s.storagePath ?? '')
       setPdfPathSaved(false)
     })
   }, [open])
+
+  const handleSelectStorageDir = useCallback(async () => {
+    if (!window.electronAPI) return
+    const result = await window.electronAPI.selectStorageFolder()
+    if (result) {
+      setStoragePath(result)
+      // Since changing storage path is a major state change, reload the app
+      window.location.reload()
+    }
+  }, [])
 
   const handleSelectPdfDir = useCallback(async () => {
     if (!window.electronAPI) return
@@ -102,7 +114,7 @@ export function SettingsModal({ open, onClose }: Props) {
 
         {/* Tabs */}
         <div className="flex border-b border-gray-200 px-5">
-          {([['shortcuts', '快捷键'], ['export', '导出']] as const).map(([id, label]) => (
+          {([['general', '通用'], ['shortcuts', '快捷键'], ['export', '导出']] as const).map(([id, label]) => (
             <button
               key={id}
               onClick={() => setActiveTab(id)}
@@ -117,6 +129,29 @@ export function SettingsModal({ open, onClose }: Props) {
             </button>
           ))}
         </div>
+
+        {/* ── General tab ── */}
+        {activeTab === 'general' && (
+          <div className="flex-1 px-5 py-5 flex flex-col gap-4">
+            <div>
+              <p className="text-sm font-medium text-gray-700 mb-1">白板数据存储路径</p>
+              <p className="text-xs text-gray-400 mb-3">
+                这是所有白板 JSON 文件和图片的存储根目录。更改后应用将重新加载。
+              </p>
+              <div className="flex gap-2">
+                <div className="flex-1 text-xs border border-gray-200 bg-gray-50 rounded-md px-3 py-2 text-gray-600 font-mono truncate select-all" title={storagePath}>
+                  {storagePath || '未设置'}
+                </div>
+                <button
+                  onClick={handleSelectStorageDir}
+                  className="px-3 py-2 text-xs bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors text-gray-700 font-medium whitespace-nowrap"
+                >
+                  更改文件夹…
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ── Shortcuts tab ── */}
         {activeTab === 'shortcuts' && (<>

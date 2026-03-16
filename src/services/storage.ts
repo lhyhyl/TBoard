@@ -111,3 +111,10 @@ export async function importJsonFile(): Promise<{ type: string; data: unknown; f
   }
   return null
 }
+
+export async function importWorkspaceFolder(): Promise<{ success: boolean; count: number }> {
+  if (window.electronAPI) {
+    return window.electronAPI.importWorkspaceFolder()
+  }
+  return { success: false, count: 0 }
+}
