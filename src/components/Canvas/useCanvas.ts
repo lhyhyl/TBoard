@@ -220,6 +220,8 @@ export function useCanvas(
     const toolCursor = TOOL_CURSORS[activeTool] ?? 'default'
     canvas.defaultCursor = toolCursor
     canvas.freeDrawingCursor = toolCursor
+    canvas.hoverCursor = toolCursor
+    canvas.moveCursor = toolCursor
 
     if (activeTool === 'pen') {
       const brush = new PressureBrush(canvas)
