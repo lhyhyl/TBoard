@@ -29,6 +29,15 @@ export function PenOptions() {
     )
   }
 
+  // ── Lasso mode ───────────────────────────────────────────────────────
+  if (activeTool === 'lasso') {
+    return (
+      <div className="flex items-center gap-1 text-sm text-gray-500 font-medium">
+        圈选删除：画一个闭合圈，删除被圈中或碰到的内容
+      </div>
+    )
+  }
+
   // ── Pen / Highlighter / Shape mode ────────────────────────────────────
   return (
     <div className="flex items-center gap-2">

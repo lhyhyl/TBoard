@@ -46,7 +46,7 @@ export interface AppSettings {
   pdfExportPath: string | null
 }
 
-export type ToolType = 'select' | 'pen' | 'eraser' | 'text' | 'laser' | 'highlighter' | 'shape' | 'trail'
+export type ToolType = 'select' | 'pen' | 'eraser' | 'lasso' | 'text' | 'laser' | 'highlighter' | 'shape' | 'trail'
 
 export type ShapeType = 'line' | 'arrow' | 'rect' | 'ellipse'
 

@@ -43,6 +43,12 @@ const Icons = {
       <rect x="14" y="11" width="3" height="11" fill="#e2e8f0" />
     </svg>
   ),
+  lasso: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-5 h-5">
+      <path d="M10 6.5C10 3 13.5 3 15 3.5C20 4.5 21 9 19 12.5C17.5 15.5 13.5 18.5 9.5 18C5 17.5 3 13 4 9C4.5 7 7.5 6.5 10 6.5Z" strokeDasharray="3 3"/>
+      <path d="M9.5 18L13 22" />
+    </svg>
+  ),
   text: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
       <path d="M4 7V4h16v3M9 20h6M12 4v16" />
@@ -262,6 +268,7 @@ export function Toolbar({ onUndo, onRedo, onClear, onInsertImage, onImportJson, 
     { id: 'pen', label: '画笔', shortcutAction: 'tool:pen', icon: Icons.pen },
     { id: 'highlighter', label: '荧光笔', shortcutAction: 'tool:highlighter', icon: Icons.highlighter },
     { id: 'eraser', label: '橡皮擦', shortcutAction: 'tool:eraser', icon: Icons.eraser },
+    { id: 'lasso', label: '圈选删除', shortcutAction: 'tool:lasso', icon: Icons.lasso },
     { id: 'text', label: '文字', shortcutAction: 'tool:text', icon: Icons.text }
   ]
 
@@ -292,7 +299,7 @@ export function Toolbar({ onUndo, onRedo, onClear, onInsertImage, onImportJson, 
       </ToolButton>
 
       {/* Pen/highlighter options */}
-      {(activeTool === 'pen' || activeTool === 'eraser' || activeTool === 'highlighter' || activeTool === 'shape') && (
+      {(activeTool === 'pen' || activeTool === 'eraser' || activeTool === 'lasso' || activeTool === 'highlighter' || activeTool === 'shape') && (
         <div className="ml-2 border-l border-gray-200 pl-2">
           <PenOptions />
         </div>

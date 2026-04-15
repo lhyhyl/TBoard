@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 
 export type ShortcutAction =
-  | 'tool:select' | 'tool:pen' | 'tool:highlighter' | 'tool:eraser'
+  | 'tool:select' | 'tool:pen' | 'tool:highlighter' | 'tool:eraser' | 'tool:lasso'
   | 'tool:text' | 'tool:shape' | 'tool:laser' | 'tool:trail'
   | 'action:undo' | 'action:redo' | 'action:delete'
   | 'action:presentation' | 'action:escape'
@@ -13,10 +13,11 @@ export const DEFAULT_SHORTCUTS: ShortcutMap = {
   'tool:pen': '2',
   'tool:highlighter': '3',
   'tool:eraser': '4',
-  'tool:text': '5',
-  'tool:shape': '6',
-  'tool:laser': '7',
-  'tool:trail': '8',
+  'tool:lasso': '5',
+  'tool:text': '6',
+  'tool:shape': '7',
+  'tool:laser': '8',
+  'tool:trail': '9',
   'action:undo': 'Ctrl+Z',
   'action:redo': 'Ctrl+Y',
   'action:delete': 'Delete',
@@ -29,6 +30,7 @@ export const ACTION_LABELS: Record<ShortcutAction, string> = {
   'tool:pen': '画笔',
   'tool:highlighter': '荧光笔',
   'tool:eraser': '橡皮擦',
+  'tool:lasso': '圈选删除',
   'tool:text': '文字',
   'tool:shape': '形状',
   'tool:laser': '激光笔',

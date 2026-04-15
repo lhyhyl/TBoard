@@ -10,6 +10,20 @@ import type { BackgroundType, ToolType } from '../../types'
 /* History stack for undo/redo */
 const MAX_HISTORY = 50
 
+/* ---------- Utilities ---------- */
+function pointInPolygon(point: {x: number, y: number}, vs: {x: number, y: number}[]) {
+  let x = point.x, y = point.y
+  let inside = false
+  for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+    let xi = vs[i].x, yi = vs[i].y
+    let xj = vs[j].x, yj = vs[j].y
+    let intersect = ((yi > y) != (yj > y))
+        && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)
+    if (intersect) inside = !inside
+  }
+  return inside
+}
+
 /* ---------- Pressure-sensitive brush ---------- */
 class PressureBrush extends fabric.PencilBrush {
   pressureWidth = 3
@@ -303,6 +317,117 @@ export function useCanvas(
         canvas.off('mouse:down', onEraserDown)
         canvas.off('mouse:move', onEraserMove)
         canvas.off('mouse:up', onEraserUp)
+      }
+    }
+
+    // ---------- Lasso Delete (Circle select to delete) ----------
+    if (activeTool === 'lasso') {
+      canvas.isDrawingMode = false
+      canvas.selection = false
+      canvas.defaultCursor = 'crosshair'
+      
+      let isDrawing = false
+      const trailPoints: {x: number, y: number}[] = []
+      let trailPath: fabric.Polyline | null = null
+
+      const onLassoDown = (opt: fabric.TPointerEventInfo) => {
+        const e = opt.e as MouseEvent
+        if (spaceHeldRef.current || e.button === 1) return
+        isDrawing = true
+        trailPoints.length = 0
+        const pointer = canvas.getScenePoint(e)
+        trailPoints.push({ x: pointer.x, y: pointer.y })
+      }
+
+      const onLassoMove = (opt: fabric.TPointerEventInfo) => {
+        if (!isDrawing) return
+        const pointer = canvas.getScenePoint(opt.e as MouseEvent)
+        trailPoints.push({ x: pointer.x, y: pointer.y })
+        
+        if (trailPath) canvas.remove(trailPath)
+        
+        if (trailPoints.length > 1) {
+          trailPath = new fabric.Polyline(trailPoints, {
+            stroke: 'rgba(100, 150, 255, 0.8)',
+            strokeWidth: 2,
+            strokeDashArray: [5, 5],
+            fill: 'rgba(100, 150, 255, 0.1)',
+            selectable: false,
+            evented: false,
+            excludeFromExport: true
+          })
+          canvas.add(trailPath)
+          canvas.requestRenderAll()
+        }
+      }
+
+      const onLassoUp = () => {
+        if (!isDrawing) return
+        isDrawing = false
+        
+        if (trailPath) {
+          canvas.remove(trailPath)
+          trailPath = null
+        }
+        
+        if (trailPoints.length > 2) {
+          const objects = canvas.getObjects()
+          const toDelete: fabric.FabricObject[] = []
+          
+          for (const obj of objects) {
+            if (obj.lockMovementX) continue // Skip locked objects
+            
+            let intersect = false
+            const center = obj.getCenterPoint()
+            
+            // 1. the object's center is inside the lasso
+            if (pointInPolygon(center, trailPoints)) {
+              intersect = true
+            } else {
+              // 2. any of the object's bounding corners are inside the lasso
+              const coords = obj.getCoords()
+              for (const pt of coords) {
+                if (pointInPolygon(pt, trailPoints)) {
+                  intersect = true
+                  break
+                }
+              }
+              
+              // 3. lasso line overlaps the object
+              if (!intersect) {
+                const step = Math.max(1, Math.floor(trailPoints.length / 20))
+                for (let i = 0; i < trailPoints.length; i += step) {
+                  if (obj.containsPoint(new fabric.Point(trailPoints[i].x, trailPoints[i].y))) {
+                    intersect = true
+                    break
+                  }
+                }
+              }
+            }
+            
+            if (intersect) {
+              toDelete.push(obj)
+            }
+          }
+          
+          if (toDelete.length > 0) {
+            toDelete.forEach(obj => canvas.remove(obj))
+            canvas.requestRenderAll()
+          }
+        }
+        trailPoints.length = 0
+      }
+
+      canvas.on('mouse:down', onLassoDown)
+      canvas.on('mouse:move', onLassoMove)
+      canvas.on('mouse:up', onLassoUp)
+      
+      return () => {
+        canvas.off('mouse:down', onLassoDown)
+        canvas.off('mouse:move', onLassoMove)
+        canvas.off('mouse:up', onLassoUp)
+        if (trailPath) canvas.remove(trailPath)
+        canvas.defaultCursor = 'default'
       }
     }
 
@@ -816,6 +941,7 @@ export function useCanvas(
           { action: 'tool:pen', tool: 'pen' },
           { action: 'tool:highlighter', tool: 'highlighter' },
           { action: 'tool:eraser', tool: 'eraser' },
+          { action: 'tool:lasso', tool: 'lasso' },
           { action: 'tool:text', tool: 'text' },
           { action: 'tool:shape', tool: 'shape' },
           { action: 'tool:laser', tool: 'laser' },
