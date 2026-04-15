@@ -90,8 +90,9 @@ export function useCanvas(
   const historyRef = useRef<string[]>([])
   const historyIndexRef = useRef<number>(-1)
   const skipHistoryRef = useRef(false)
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const { activeTool, penOptions, eraserWidth } = useToolStore()
+  const { activeTool, penOptions } = useToolStore()
   const { activeBoardId, activeBoard, updateBoardCanvas } = useBoardStore()
   const loadedIdRef = useRef<string | null>(null)
 
@@ -112,11 +113,18 @@ export function useCanvas(
 
     // Load board data if it's already available in store
     if (activeBoard?.id === activeBoardId && activeBoard.canvasJSON) {
-      canvas.loadFromJSON(JSON.parse(activeBoard.canvasJSON)).then(() => {
-        canvas.renderAll()
-        pushHistory(canvas)
-        loadedIdRef.current = activeBoardId
-      })
+      skipHistoryRef.current = true // Lock observers during initial load
+      canvas.loadFromJSON(JSON.parse(activeBoard.canvasJSON))
+        .then(() => {
+          canvas.renderAll()
+          skipHistoryRef.current = false
+          pushHistory(canvas)
+          loadedIdRef.current = activeBoardId
+        })
+        .catch(err => {
+          console.error('Failed to load board JSON:', err)
+          skipHistoryRef.current = false
+        })
     } else {
       pushHistory(canvas)
     }
@@ -163,11 +171,18 @@ export function useCanvas(
     if (loadedIdRef.current === activeBoardId) return // Already loaded
 
     if (activeBoard.canvasJSON) {
-      canvas.loadFromJSON(JSON.parse(activeBoard.canvasJSON)).then(() => {
-        canvas.renderAll()
-        pushHistory(canvas)
-        loadedIdRef.current = activeBoardId
-      })
+      skipHistoryRef.current = true // Lock observers during async load
+      canvas.loadFromJSON(JSON.parse(activeBoard.canvasJSON))
+        .then(() => {
+          canvas.renderAll()
+          skipHistoryRef.current = false
+          pushHistory(canvas)
+          loadedIdRef.current = activeBoardId
+        })
+        .catch(err => {
+          console.error('Failed to async load board JSON:', err)
+          skipHistoryRef.current = false
+        })
     } else {
       loadedIdRef.current = activeBoardId
     }
@@ -198,7 +213,7 @@ export function useCanvas(
       laserDotRef.current = null
     }
 
-    canvas.isDrawingMode = activeTool === 'pen' || activeTool === 'eraser' || activeTool === 'highlighter'
+    canvas.isDrawingMode = activeTool === 'pen' || activeTool === 'highlighter'
     canvas.selection = activeTool === 'select'
 
     // Apply matching cursor for active tool
@@ -212,11 +227,6 @@ export function useCanvas(
       brush.pressureWidth = penOptions.width
       brush.width = penOptions.width
       canvas.freeDrawingBrush = brush
-    } else if (activeTool === 'eraser') {
-      const eraserBrush = new fabric.PencilBrush(canvas)
-      eraserBrush.color = '#ffffff'
-      eraserBrush.width = eraserWidth
-      canvas.freeDrawingBrush = eraserBrush
     } else if (activeTool === 'highlighter') {
       const hlBrush = new PressureBrush(canvas)
       const hex = penOptions.color
@@ -248,6 +258,50 @@ export function useCanvas(
       }
       canvas.on('mouse:down', handleTextClick)
       return () => { canvas.off('mouse:down', handleTextClick) }
+    }
+
+    // ---------- Eraser (Object stroke eraser) ----------
+    if (activeTool === 'eraser') {
+      canvas.isDrawingMode = false
+      canvas.selection = false
+      canvas.defaultCursor = TOOL_CURSORS['eraser']
+      
+      let isErasing = false
+
+      const eraseObjectUnderPointer = (e: MouseEvent) => {
+        const pointer = canvas.getScenePoint(e)
+        const targets = canvas.getObjects().filter(obj => obj.containsPoint(pointer))
+        if (targets.length > 0) {
+          targets.forEach(t => canvas.remove(t))
+          canvas.requestRenderAll()
+        }
+      }
+
+      const onEraserDown = (opt: fabric.TPointerEventInfo) => {
+        const e = opt.e as MouseEvent
+        if (spaceHeldRef.current || e.button === 1) return
+        isErasing = true
+        eraseObjectUnderPointer(e)
+      }
+
+      const onEraserMove = (opt: fabric.TPointerEventInfo) => {
+        if (!isErasing) return
+        eraseObjectUnderPointer(opt.e as MouseEvent)
+      }
+
+      const onEraserUp = () => {
+        isErasing = false
+      }
+
+      canvas.on('mouse:down', onEraserDown)
+      canvas.on('mouse:move', onEraserMove)
+      canvas.on('mouse:up', onEraserUp)
+
+      return () => {
+        canvas.off('mouse:down', onEraserDown)
+        canvas.off('mouse:move', onEraserMove)
+        canvas.off('mouse:up', onEraserUp)
+      }
     }
 
     // ---------- Trail pen (fade after lift) ----------
@@ -463,7 +517,7 @@ export function useCanvas(
     }
 
     return undefined
-  }, [activeTool, penOptions, eraserWidth, activeBoardId])
+  }, [activeTool, penOptions, activeBoardId])
 
   /* ---------- History ---------- */
   function pushHistory(canvas: fabric.Canvas) {
@@ -479,10 +533,17 @@ export function useCanvas(
   }
 
   const onCanvasChanged = useCallback(() => {
+    if (skipHistoryRef.current) return
     const canvas = fabricRef.current
     if (!canvas) return
     pushHistory(canvas)
-    saveBoardState(canvas)
+
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current)
+    }
+    saveTimeoutRef.current = setTimeout(() => {
+      saveBoardState(canvas)
+    }, 500)
   }, [activeBoardId])
 
   /* ---------- Save ---------- */
@@ -494,28 +555,42 @@ export function useCanvas(
   }
 
   /* ---------- Undo / Redo ---------- */
-  const undo = useCallback(() => {
+  const undo = useCallback(async () => {
     const canvas = fabricRef.current
-    if (!canvas || historyIndexRef.current <= 0) return
-    historyIndexRef.current -= 1
+    if (!canvas || historyIndexRef.current <= 0 || skipHistoryRef.current) return
+    
     skipHistoryRef.current = true
-    canvas.loadFromJSON(JSON.parse(historyRef.current[historyIndexRef.current])).then(() => {
+    historyIndexRef.current -= 1
+    
+    try {
+      await canvas.loadFromJSON(JSON.parse(historyRef.current[historyIndexRef.current]))
       canvas.renderAll()
-      skipHistoryRef.current = false
       saveBoardState(canvas)
-    })
+    } catch (e) {
+      console.error('Undo error:', e)
+      historyIndexRef.current += 1
+    } finally {
+      skipHistoryRef.current = false
+    }
   }, [activeBoardId])
 
-  const redo = useCallback(() => {
+  const redo = useCallback(async () => {
     const canvas = fabricRef.current
-    if (!canvas || historyIndexRef.current >= historyRef.current.length - 1) return
-    historyIndexRef.current += 1
+    if (!canvas || historyIndexRef.current >= historyRef.current.length - 1 || skipHistoryRef.current) return
+    
     skipHistoryRef.current = true
-    canvas.loadFromJSON(JSON.parse(historyRef.current[historyIndexRef.current])).then(() => {
+    historyIndexRef.current += 1
+    
+    try {
+      await canvas.loadFromJSON(JSON.parse(historyRef.current[historyIndexRef.current]))
       canvas.renderAll()
-      skipHistoryRef.current = false
       saveBoardState(canvas)
-    })
+    } catch (e) {
+      console.error('Redo error:', e)
+      historyIndexRef.current -= 1
+    } finally {
+      skipHistoryRef.current = false
+    }
   }, [activeBoardId])
 
   const clearCanvas = useCallback(() => {
