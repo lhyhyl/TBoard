@@ -16,20 +16,31 @@ const Icons = {
     </svg>
   ),
   pen: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
-      <path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+    <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6">
+      <path d="M12 2L8 9v3h8V9L12 2z" fill="#333" />
+      <path d="M8 12v9a1 1 0 001 1h6a1 1 0 001-1v-9H8z" fill="#f1f5f9" />
+      <path d="M16 12v9a1 1 0 01-1 1h-3V12h4z" fill="#e2e8f0" />
+      <path d="M16 9L12 2v10h4V9z" fill="#1e293b" />
+      <rect x="8" y="19" width="8" height="1.5" fill="#333" />
     </svg>
   ),
   highlighter: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
-      <path d="M15.5 4.5l4 4L9 19H5v-4L15.5 4.5z" />
-      <path d="M5 21h14" opacity={0.4} />
+    <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6">
+      <path d="M7 11v10a1 1 0 001 1h8a1 1 0 001-1V11H7z" fill="#f1f5f9" />
+      <rect x="6" y="9" width="12" height="2" rx="0.5" fill="#e2e8f0" />
+      <path d="M8 9V6a1 1 0 011-1h6a1 1 0 011 1v3H8z" fill="#fde047" />
+      <path d="M10 5V2h4v3h-4z" fill="#eab308" />
+      <path d="M17 11v10a1 1 0 01-1 1h-3V11h4z" fill="#e2e8f0" opacity="0.6"/>
     </svg>
   ),
   eraser: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
-      <path d="M20 20H7L3 16l11-11 7 7-1 8z" />
-      <path d="M6.0001 17.9999L10 14" />
+    <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6">
+      <path d="M7 11v10a1 1 0 001 1h8a1 1 0 001-1V11H7z" fill="#f1f5f9" />
+      <rect x="7" y="9" width="10" height="2" fill="#cbd5e1" />
+      <path d="M7 9V5a2 2 0 012-2h6a2 2 0 012 2v4H7z" fill="#fca5a5" />
+      <path d="M17 9V5a2 2 0 00-2-2h-3v6h5z" fill="#f87171" opacity="0.3"/>
+      <rect x="7" y="11" width="3" height="11" fill="#e2e8f0" />
+      <rect x="14" y="11" width="3" height="11" fill="#e2e8f0" />
     </svg>
   ),
   text: (

@@ -3,25 +3,37 @@ function svgCursor(svg: string, x: number, y: number) {
 }
 
 export const CURSOR_PEN = svgCursor(
-  `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24">
-    <path d="M2 20 L4 22 L15 9 L13 7 Z" fill="#1a1a1a" stroke="white" stroke-width="1.2" stroke-linejoin="round"/>
-    <path d="M2 20 L4 22 L2 22 Z" fill="#888"/>
-    <path d="M13 7 L15 9 L18 4 L16 2 Z" fill="#ccc" stroke="white" stroke-width="0.8" stroke-linejoin="round"/>
-  </svg>`, 2, 20)
+  `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+    <g transform="rotate(-40 4 28)">
+      <rect x="0" y="4" width="8" height="18" rx="2" fill="#f1f5f9"/>
+      <rect x="4" y="4" width="4" height="18" rx="0" fill="#e2e8f0"/>
+      <rect x="0" y="22" width="8" height="3" fill="#1e293b"/>
+      <path d="M 1.5 25 L 6.5 25 L 4 28 Z" fill="#1e293b"/>
+    </g>
+  </svg>`, 4, 28)
 
 export const CURSOR_HIGHLIGHTER = svgCursor(
-  `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24">
-    <path d="M3 18 L7 21 L17 8 L13 5 Z" fill="#fde047" stroke="#555" stroke-width="1" stroke-linejoin="round"/>
-    <path d="M3 18 L5 23 L7 21 Z" fill="#555"/>
-    <path d="M13 5 L17 8 L19 4 L15 2 Z" fill="#d4d4d4" stroke="#777" stroke-width="0.8" stroke-linejoin="round"/>
-  </svg>`, 3, 22)
+  `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+    <g transform="rotate(-40 4 28)">
+      <rect x="0" y="4" width="8" height="17" rx="2" fill="#f1f5f9"/>
+      <rect x="4" y="4" width="4" height="17" rx="0" fill="#e2e8f0"/>
+      <rect x="-0.5" y="21" width="9" height="2" rx="1" fill="#cbd5e1"/>
+      <path d="M 1 23 L 7 23 L 7 26 L 3 28 L 1 28 Z" fill="#ecc94b"/>
+      <path d="M 4 23 L 7 23 L 7 26 L 4 28 Z" fill="#d69e2e" opacity="0.6"/>
+    </g>
+  </svg>`, 4, 28)
 
 export const CURSOR_ERASER = svgCursor(
-  `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="22">
-    <rect x="1" y="1" width="22" height="16" rx="2" fill="white" stroke="#999" stroke-width="1.5"/>
-    <rect x="1" y="1" width="9" height="16" rx="2" fill="#fca5a5" stroke="#999" stroke-width="1.5"/>
-    <rect x="5" y="18" width="14" height="3" rx="1" fill="#ccc"/>
-  </svg>`, 11, 16)
+  `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+    <g transform="rotate(-30 8 24)">
+      <rect x="0" y="4" width="16" height="14" rx="2" fill="#f1f5f9"/>
+      <rect x="8" y="4" width="8" height="14" rx="0" fill="#e2e8f0"/>
+      <rect x="0" y="16" width="16" height="3" fill="#cbd5e1"/>
+      <rect x="8" y="16" width="8" height="3" fill="#94a3b8"/>
+      <path d="M 0 19 L 16 19 L 14 24 L 2 24 Z" fill="#fca5a5"/>
+      <path d="M 8 19 L 16 19 L 14 24 L 8 24 Z" fill="#f87171" opacity="0.5"/>
+    </g>
+  </svg>`, 8, 24)
 
 export const TOOL_CURSORS: Record<string, string> = {
   pen: CURSOR_PEN,
