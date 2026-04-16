@@ -30,7 +30,7 @@ export const ACTION_LABELS: Record<ShortcutAction, string> = {
   'tool:pen': '画笔',
   'tool:highlighter': '荧光笔',
   'tool:eraser': '橡皮擦',
-  'tool:lasso': '圈选删除',
+  'tool:lasso': '套索选择',
   'tool:text': '文字',
   'tool:shape': '形状',
   'tool:laser': '激光笔',

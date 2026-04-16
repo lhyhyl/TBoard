@@ -268,7 +268,7 @@ export function Toolbar({ onUndo, onRedo, onClear, onInsertImage, onImportJson, 
     { id: 'pen', label: '画笔', shortcutAction: 'tool:pen', icon: Icons.pen },
     { id: 'highlighter', label: '荧光笔', shortcutAction: 'tool:highlighter', icon: Icons.highlighter },
     { id: 'eraser', label: '橡皮擦', shortcutAction: 'tool:eraser', icon: Icons.eraser },
-    { id: 'lasso', label: '圈选删除', shortcutAction: 'tool:lasso', icon: Icons.lasso },
+    { id: 'lasso', label: '套索选择', shortcutAction: 'tool:lasso', icon: Icons.lasso },
     { id: 'text', label: '文字', shortcutAction: 'tool:text', icon: Icons.text }
   ]
 

@@ -286,7 +286,9 @@ export function useCanvas(
 
       const eraseObjectUnderPointer = (e: MouseEvent) => {
         const pointer = canvas.getScenePoint(e)
-        const targets = canvas.getObjects().filter(obj => obj.containsPoint(pointer))
+        const targets = canvas.getObjects().filter(
+          obj => obj.containsPoint(pointer) && obj.type !== 'image' && obj.type !== 'Image'
+        )
         if (targets.length > 0) {
           targets.forEach(t => canvas.remove(t))
           canvas.requestRenderAll()
@@ -320,7 +322,7 @@ export function useCanvas(
       }
     }
 
-    // ---------- Lasso Delete (Circle select to delete) ----------
+    // ---------- Lasso Select (Circle select to drag) ----------
     if (activeTool === 'lasso') {
       canvas.isDrawingMode = false
       canvas.selection = false
@@ -372,7 +374,7 @@ export function useCanvas(
         
         if (trailPoints.length > 2) {
           const objects = canvas.getObjects()
-          const toDelete: fabric.FabricObject[] = []
+          const toSelect: fabric.FabricObject[] = []
           
           for (const obj of objects) {
             if (obj.lockMovementX) continue // Skip locked objects
@@ -406,13 +408,19 @@ export function useCanvas(
             }
             
             if (intersect) {
-              toDelete.push(obj)
+              toSelect.push(obj)
             }
           }
           
-          if (toDelete.length > 0) {
-            toDelete.forEach(obj => canvas.remove(obj))
+          if (toSelect.length > 0) {
+            if (toSelect.length === 1) {
+              canvas.setActiveObject(toSelect[0])
+            } else {
+              const sel = new fabric.ActiveSelection(toSelect, { canvas })
+              canvas.setActiveObject(sel)
+            }
             canvas.requestRenderAll()
+            useToolStore.getState().setTool('select')
           }
         }
         trailPoints.length = 0

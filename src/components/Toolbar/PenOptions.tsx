@@ -33,7 +33,7 @@ export function PenOptions() {
   if (activeTool === 'lasso') {
     return (
       <div className="flex items-center gap-1 text-sm text-gray-500 font-medium">
-        圈选删除：画一个闭合圈，删除被圈中或碰到的内容
+        套选工具：画一个闭合圈，选中被圈中或碰到的内容并可拖动
       </div>
     )
   }
