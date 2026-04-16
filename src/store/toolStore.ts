@@ -7,12 +7,14 @@ interface ToolState {
   penOptions: PenOptions
   presentationMode: boolean
   smoothStroke: boolean
+  calligraphyMode: boolean
   setTool: (tool: ToolType) => void
   setShape: (shape: ShapeType) => void
   setPenColor: (color: string) => void
   setPenWidth: (width: number) => void
   togglePresentation: () => void
   setSmoothStroke: (v: boolean) => void
+  setCalligraphyMode: (v: boolean) => void
 }
 
 export const useToolStore = create<ToolState>((set) => ({
@@ -21,10 +23,12 @@ export const useToolStore = create<ToolState>((set) => ({
   penOptions: { color: '#000000', width: 3 },
   presentationMode: false,
   smoothStroke: true,
+  calligraphyMode: true,
   setTool: (tool) => set({ activeTool: tool }),
   setShape: (shape) => set({ activeShape: shape }),
   setPenColor: (color) => set((s) => ({ penOptions: { ...s.penOptions, color } })),
   setPenWidth: (width) => set((s) => ({ penOptions: { ...s.penOptions, width } })),
   togglePresentation: () => set((s) => ({ presentationMode: !s.presentationMode })),
-  setSmoothStroke: (v) => set({ smoothStroke: v })
+  setSmoothStroke: (v) => set({ smoothStroke: v }),
+  setCalligraphyMode: (v) => set({ calligraphyMode: v })
 }))

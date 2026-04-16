@@ -9,14 +9,16 @@ const PRESET_COLORS = [
 const WIDTHS = [2, 4, 8, 14]
 
 export function PenOptions() {
-  const { activeTool, penOptions, setPenColor, setPenWidth, smoothStroke, setSmoothStroke } = useToolStore(
+  const { activeTool, penOptions, setPenColor, setPenWidth, smoothStroke, setSmoothStroke, calligraphyMode, setCalligraphyMode } = useToolStore(
     useShallow((s) => ({
       activeTool: s.activeTool,
       penOptions: s.penOptions,
       setPenColor: s.setPenColor,
       setPenWidth: s.setPenWidth,
       smoothStroke: s.smoothStroke,
-      setSmoothStroke: s.setSmoothStroke
+      setSmoothStroke: s.setSmoothStroke,
+      calligraphyMode: s.calligraphyMode,
+      setCalligraphyMode: s.setCalligraphyMode
     }))
   )
 
@@ -87,10 +89,10 @@ export function PenOptions() {
         ))}
       </div>
 
-      {/* Smooth stroke toggle */}
-      <div className="border-l border-gray-200 pl-2">
+      {/* Smooth stroke & Calligraphy toggles */}
+      <div className="flex border-l border-gray-200 pl-2 gap-1">
         <button
-          title={smoothStroke ? '笔画平滑：开启（点击关闭）' : '笔画平滑：关闭（点击开启）'}
+          title={smoothStroke ? '基础平滑：开启（点击关闭）' : '基础平滑：关闭（点击开启）'}
           onClick={() => setSmoothStroke(!smoothStroke)}
           className={[
             'flex items-center gap-1 px-2 h-7 rounded-md text-xs font-medium transition-colors select-none',
@@ -104,6 +106,23 @@ export function PenOptions() {
           </svg>
           平滑
         </button>
+        {(activeTool === 'pen' || activeTool === 'highlighter') && (
+          <button
+            title={calligraphyMode ? '笔迹美化(书法模式)：开启（点击关闭）' : '笔迹美化(书法模式)：关闭（点击开启）'}
+            onClick={() => setCalligraphyMode(!calligraphyMode)}
+            className={[
+              'flex items-center gap-1 px-2 h-7 rounded-md text-xs font-medium transition-colors select-none',
+              calligraphyMode
+                ? 'bg-purple-100 text-purple-700'
+                : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'
+            ].join(' ')}
+          >
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M2.5 9.5l3-3m0 0l4-4a1.5 1.5 0 012 2l-4 4m-5 1H2v-1.5L8.5 2.5a2.121 2.121 0 013 3L3.5 9.5z" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            美化
+          </button>
+        )}
       </div>
     </div>
   )

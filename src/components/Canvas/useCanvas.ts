@@ -6,6 +6,7 @@ import { TOOL_CURSORS } from '../../utils/cursors'
 import { useBoardStore } from '../../store/boardStore'
 import { useShortcutStore, matchesShortcut, type ShortcutAction } from '../../store/shortcutStore'
 import type { BackgroundType, ToolType } from '../../types'
+import { CalligraphyBrush } from './CalligraphyBrush'
 
 /* History stack for undo/redo */
 const MAX_HISTORY = 50
@@ -106,7 +107,7 @@ export function useCanvas(
   const skipHistoryRef = useRef(false)
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const { activeTool, penOptions } = useToolStore()
+  const { activeTool, penOptions, calligraphyMode } = useToolStore()
   const { activeBoardId, activeBoard, updateBoardCanvas } = useBoardStore()
   const loadedIdRef = useRef<string | null>(null)
 
@@ -145,8 +146,8 @@ export function useCanvas(
 
     // Smooth pen strokes on lift
     const onPathCreated = (e: { path: fabric.Path }) => {
-      const { smoothStroke, activeTool } = useToolStore.getState()
-      if (!smoothStroke) return
+      const { smoothStroke, activeTool, calligraphyMode } = useToolStore.getState()
+      if (!smoothStroke || calligraphyMode) return
       if (activeTool !== 'pen' && activeTool !== 'highlighter') return
       const path = e.path
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -238,20 +239,34 @@ export function useCanvas(
     canvas.moveCursor = toolCursor
 
     if (activeTool === 'pen') {
-      const brush = new PressureBrush(canvas)
-      brush.color = penOptions.color
-      brush.pressureWidth = penOptions.width
-      brush.width = penOptions.width
-      canvas.freeDrawingBrush = brush
+      if (calligraphyMode) {
+        const cBrush = new CalligraphyBrush(canvas)
+        cBrush.color = penOptions.color
+        cBrush.pressureWidth = penOptions.width
+        canvas.freeDrawingBrush = cBrush
+      } else {
+        const brush = new PressureBrush(canvas)
+        brush.color = penOptions.color
+        brush.pressureWidth = penOptions.width
+        brush.width = penOptions.width
+        canvas.freeDrawingBrush = brush
+      }
     } else if (activeTool === 'highlighter') {
-      const hlBrush = new PressureBrush(canvas)
-      const hex = penOptions.color
-      hlBrush.color = hex + '55'
-      hlBrush.pressureWidth = 20
-      hlBrush.width = 20
-      hlBrush.strokeLineCap = 'round'
-      hlBrush.strokeLineJoin = 'round'
-      canvas.freeDrawingBrush = hlBrush
+      if (calligraphyMode) {
+        const hlBrushC = new CalligraphyBrush(canvas)
+        hlBrushC.color = penOptions.color + '55'
+        hlBrushC.pressureWidth = 20
+        canvas.freeDrawingBrush = hlBrushC
+      } else {
+        const hlBrush = new PressureBrush(canvas)
+        const hex = penOptions.color
+        hlBrush.color = hex + '55'
+        hlBrush.pressureWidth = 20
+        hlBrush.width = 20
+        hlBrush.strokeLineCap = 'round'
+        hlBrush.strokeLineJoin = 'round'
+        canvas.freeDrawingBrush = hlBrush
+      }
     }
 
     if (activeTool === 'text') {
@@ -652,7 +667,7 @@ export function useCanvas(
     }
 
     return undefined
-  }, [activeTool, penOptions, activeBoardId])
+  }, [activeTool, penOptions, calligraphyMode, activeBoardId])
 
   /* ---------- History ---------- */
   function pushHistory(canvas: fabric.Canvas) {
