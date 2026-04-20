@@ -59,9 +59,14 @@ export class CalligraphyBrush extends fabric.BaseBrush {
 
     const pathData = getSvgPathFromStroke(stroke)
     
+    ctx.save()
+    if (this.canvas.viewportTransform) {
+      ctx.transform(...this.canvas.viewportTransform)
+    }
     ctx.fillStyle = this.color
     const p2d = new Path2D(pathData)
     ctx.fill(p2d)
+    ctx.restore()
   }
 
   onMouseUp(options: fabric.TPointerEventInfo) {
