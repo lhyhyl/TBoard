@@ -20,6 +20,7 @@ export class CalligraphyBrush extends fabric.BaseBrush {
   private currentPath: fabric.Path | null = null
   public pressureWidth: number = 3
   private fillOpacity: number = 1
+  private _renderFrame: number = 0
 
   constructor(canvas: fabric.Canvas) {
     super(canvas)
@@ -38,13 +39,15 @@ export class CalligraphyBrush extends fabric.BaseBrush {
   onMouseDown(pointer: fabric.Point, options: fabric.TPointerEventInfo) {
     const e = options.e as PointerEvent
     this.points = [{ x: pointer.x, y: pointer.y, pressure: e.pressure || 0.5 }]
+    this.renderBrushFrame()
   }
 
-  onMouseMove(pointer: fabric.Point, options: fabric.TPointerEventInfo) {
-    const e = options.e as PointerEvent
-    this.points.push({ x: pointer.x, y: pointer.y, pressure: e.pressure || 0.5 })
-    
-    if (!this.canvas.contextTop) return
+  public _render() {
+    // Implementing abstract method, but we have our own custom rendering flow
+  }
+
+  private renderBrushFrame = () => {
+    if (!this.canvas.contextTop || this.points.length === 0) return
     const ctx = this.canvas.contextTop
     this.canvas.clearContext(ctx)
     
@@ -53,7 +56,7 @@ export class CalligraphyBrush extends fabric.BaseBrush {
       size: this.pressureWidth,
       thinning: 0.6,
       smoothing: 0.5,
-      streamline: 0.5,
+      streamline: 0.3,
       simulatePressure: true
     })
 
@@ -69,14 +72,40 @@ export class CalligraphyBrush extends fabric.BaseBrush {
     ctx.restore()
   }
 
+  onMouseMove(pointer: fabric.Point, options: fabric.TPointerEventInfo) {
+    const e = options.e as PointerEvent
+    
+    // Decimate points: only add if moved more than 1.5 pixels or it's the first move
+    if (this.points.length > 0) {
+      const lastPoint = this.points[this.points.length - 1]
+      const dx = pointer.x - lastPoint.x
+      const dy = pointer.y - lastPoint.y
+      if (dx * dx + dy * dy < 2.25) return // 1.5 * 1.5
+    }
+
+    this.points.push({ x: pointer.x, y: pointer.y, pressure: e.pressure || 0.5 })
+    
+    if (this._renderFrame) {
+      cancelAnimationFrame(this._renderFrame)
+    }
+    
+    // Throttle the intense Path2D calculation by bounding to animation frames
+    this._renderFrame = requestAnimationFrame(this.renderBrushFrame)
+  }
+
   onMouseUp(options: fabric.TPointerEventInfo) {
-    if (!this.canvas.contextTop) return
+    if (this._renderFrame) {
+      cancelAnimationFrame(this._renderFrame)
+      this._renderFrame = 0
+    }
+
+    if (!this.canvas.contextTop || this.points.length === 0) return
     
     const stroke = getStroke(this.points, {
       size: this.pressureWidth,
       thinning: 0.6,
       smoothing: 0.5,
-      streamline: 0.5,
+      streamline: 0.3,
       simulatePressure: true
     })
     
@@ -90,6 +119,7 @@ export class CalligraphyBrush extends fabric.BaseBrush {
       evented: true,
       strokeLineCap: 'round',
       strokeLineJoin: 'round',
+      objectCaching: true // Helps immensely with massive numbers of SVG paths rendering
       // Highlighter strokes look better with normal compositing, but wait, usually default is source-over
     })
 

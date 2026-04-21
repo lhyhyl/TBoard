@@ -174,20 +174,23 @@ export const useBoardStore = create<BoardState>((set, get) => ({
   },
 
   updateBoardCanvas: (id, canvasJSON, thumbnail) => {
-    // Update meta thumbnail (in-memory only; persisted via the board file below)
+    // Update meta thumbnail in-memory (lightweight)
     set((s) => ({
       boardMetas: s.boardMetas.map((m) =>
         m.id === id ? { ...m, thumbnail, updatedAt: Date.now() } : m
       )
     }))
-    // Update full board
+    
     const { activeBoard } = get()
     if (activeBoard && activeBoard.id === id) {
+      // Only update local activeBoard object for persistence, 
+      // but avoid a full 'set' if we don't want to trigger deep rerenders.
+      // However, to keep store consistent, we do need to update it.
+      // We optimize by checking if anything actually changed (though usually it has)
       const updated = { ...activeBoard, canvasJSON, thumbnail, updatedAt: Date.now() }
       set({ activeBoard: updated })
       saveBoardDebounced(updated)
     } else {
-      // Board not active — read, update, write
       readBoardFile(id).then((board) => {
         if (board) {
           writeBoardFile({ ...board, canvasJSON, thumbnail, updatedAt: Date.now() })

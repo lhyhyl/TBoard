@@ -29,13 +29,14 @@ function pointInPolygon(point: {x: number, y: number}, vs: {x: number, y: number
 class PressureBrush extends fabric.PencilBrush {
   pressureWidth = 3
 
+  constructor(canvas: fabric.Canvas) {
+    super(canvas)
+    this.decimate = 1.5 // Prune points closer than 1.5px
+  }
+
   onMouseDown(pointer: fabric.Point, ev: fabric.TPointerEventInfo) {
     this.width = this.pressureWidth
     return super.onMouseDown(pointer, ev)
-  }
-
-  onMouseMove(pointer: fabric.Point, ev: fabric.TPointerEventInfo) {
-    return super.onMouseMove(pointer, ev)
   }
 }
 
@@ -107,8 +108,13 @@ export function useCanvas(
   const skipHistoryRef = useRef(false)
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const { activeTool, penOptions, calligraphyMode } = useToolStore()
-  const { activeBoardId, activeBoard, updateBoardCanvas } = useBoardStore()
+  const activeTool = useToolStore(s => s.activeTool)
+  const penOptions = useToolStore(s => s.penOptions)
+  const calligraphyMode = useToolStore(s => s.calligraphyMode)
+
+  const activeBoardId = useBoardStore(s => s.activeBoardId)
+  const activeBoard = useBoardStore(s => s.activeBoard)
+  const updateBoardCanvas = useBoardStore(s => s.updateBoardCanvas)
   const loadedIdRef = useRef<string | null>(null)
 
   /* ---------- Init canvas ---------- */
@@ -133,7 +139,7 @@ export function useCanvas(
         .then(() => {
           canvas.renderAll()
           skipHistoryRef.current = false
-          pushHistory(canvas)
+          pushHistory(JSON.stringify(canvas.toJSON()))
           loadedIdRef.current = activeBoardId
         })
         .catch(err => {
@@ -141,7 +147,7 @@ export function useCanvas(
           skipHistoryRef.current = false
         })
     } else {
-      pushHistory(canvas)
+      pushHistory(JSON.stringify(canvas.toJSON()))
     }
 
     // Smooth pen strokes on lift
@@ -191,7 +197,7 @@ export function useCanvas(
         .then(() => {
           canvas.renderAll()
           skipHistoryRef.current = false
-          pushHistory(canvas)
+          pushHistory(JSON.stringify(canvas.toJSON()))
           loadedIdRef.current = activeBoardId
         })
         .catch(err => {
@@ -230,6 +236,7 @@ export function useCanvas(
 
     canvas.isDrawingMode = activeTool === 'pen' || activeTool === 'highlighter'
     canvas.selection = activeTool === 'select'
+    canvas.skipTargetFind = activeTool !== 'select'
 
     // Apply matching cursor for active tool
     const toolCursor = TOOL_CURSORS[activeTool] ?? 'default'
@@ -670,12 +677,11 @@ export function useCanvas(
   }, [activeTool, penOptions, calligraphyMode, activeBoardId])
 
   /* ---------- History ---------- */
-  function pushHistory(canvas: fabric.Canvas) {
+  function pushHistory(canvasJSON: string) {
     if (skipHistoryRef.current) return
-    const json = JSON.stringify(canvas.toJSON())
     // Truncate forward history if we branched
     historyRef.current = historyRef.current.slice(0, historyIndexRef.current + 1)
-    historyRef.current.push(json)
+    historyRef.current.push(canvasJSON)
     if (historyRef.current.length > MAX_HISTORY) {
       historyRef.current.shift()
     }
@@ -686,22 +692,26 @@ export function useCanvas(
     if (skipHistoryRef.current) return
     const canvas = fabricRef.current
     if (!canvas) return
-    pushHistory(canvas)
 
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current)
     }
+    // Increased debounce to 1000ms to prevent blocking during active handwriting
     saveTimeoutRef.current = setTimeout(() => {
-      saveBoardState(canvas)
-    }, 500)
+      if (skipHistoryRef.current || canvas.isDrawingMode && (canvas as any)._isCurrentlyDrawing) return
+      
+      const canvasJSON = JSON.stringify(canvas.toJSON())
+      pushHistory(canvasJSON)
+      saveBoardState(canvas, canvasJSON)
+    }, 1000)
   }, [activeBoardId])
 
   /* ---------- Save ---------- */
-  function saveBoardState(canvas: fabric.Canvas) {
+  function saveBoardState(canvas: fabric.Canvas, canvasJSON?: string) {
     if (!activeBoardId) return
-    const canvasJSON = JSON.stringify(canvas.toJSON())
+    const finalJSON = canvasJSON || JSON.stringify(canvas.toJSON())
     const thumbnail = canvas.toDataURL({ format: 'png', multiplier: 0.2 })
-    updateBoardCanvas(activeBoardId, canvasJSON, thumbnail)
+    updateBoardCanvas(activeBoardId, finalJSON, thumbnail)
   }
 
   /* ---------- Undo / Redo ---------- */
@@ -749,7 +759,7 @@ export function useCanvas(
     canvas.clear()
     canvas.backgroundColor = 'transparent'
     canvas.renderAll()
-    pushHistory(canvas)
+    pushHistory(JSON.stringify(canvas.toJSON()))
     if (activeBoardId) updateBoardCanvas(activeBoardId, '', '')
   }, [activeBoardId])
 
@@ -885,7 +895,7 @@ export function useCanvas(
       // Restore selection state based on current tool
       const tool = useToolStore.getState().activeTool
       canvas.selection = tool === 'select'
-      canvas.skipTargetFind = false
+      canvas.skipTargetFind = tool !== 'select'
       canvas.requestRenderAll()
     }
 

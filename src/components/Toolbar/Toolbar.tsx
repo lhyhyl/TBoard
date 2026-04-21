@@ -273,103 +273,117 @@ export function Toolbar({ onUndo, onRedo, onClear, onInsertImage, onImportJson, 
   ]
 
   return (
-    <div className={['h-12 bg-white border-b border-gray-200 flex items-center gap-1 px-3 select-none no-drag transition-opacity', presentationMode ? 'opacity-0 hover:opacity-100' : ''].join(' ')}>
-      {tools.map((t) => (
-        <ToolButton
-          key={t.id}
-          active={activeTool === t.id}
-          title={`${t.label} (${shortcuts[t.shortcutAction as keyof typeof shortcuts]})`}
-          onClick={() => setTool(t.id)}
-        >
-          {t.icon}
-        </ToolButton>
-      ))}
+    <div className={['h-12 bg-white border-b border-gray-200 flex items-center px-3 select-none no-drag transition-opacity overflow-hidden', presentationMode ? 'opacity-0 hover:opacity-100' : ''].join(' ')}>
+      {/* Scrollable primary tools & header area */}
+      <div className="flex-1 flex items-center gap-1 overflow-x-auto no-scrollbar py-1">
+        <div className="flex items-center gap-1 flex-shrink-0">
+          {tools.map((t) => (
+            <div key={t.id} className="flex-shrink-0">
+              <ToolButton
+                active={activeTool === t.id}
+                title={`${t.label} (${shortcuts[t.shortcutAction as keyof typeof shortcuts]})`}
+                onClick={() => setTool(t.id)}
+              >
+                {t.icon}
+              </ToolButton>
+            </div>
+          ))}
 
-      {/* Shape tool with dropdown */}
-      <ShapeButton />
+          {/* Shape tool with dropdown */}
+          <div className="flex-shrink-0">
+            <ShapeButton />
+          </div>
 
-      {/* Laser pointer */}
-      <ToolButton active={activeTool === 'laser'} title={`激光笔 (${shortcuts['tool:laser']})`} onClick={() => setTool('laser')}>
-        {Icons.laser}
-      </ToolButton>
+          {/* Laser pointer */}
+          <div className="flex-shrink-0">
+            <ToolButton active={activeTool === 'laser'} title={`激光笔 (${shortcuts['tool:laser']})`} onClick={() => setTool('laser')}>
+              {Icons.laser}
+            </ToolButton>
+          </div>
 
-      {/* Trail pen */}
-      <ToolButton active={activeTool === 'trail'} title={`轨迹笔 (${shortcuts['tool:trail']})`} onClick={() => setTool('trail')}>
-        {Icons.trail}
-      </ToolButton>
-
-      {/* Pen/highlighter options */}
-      {(activeTool === 'pen' || activeTool === 'eraser' || activeTool === 'lasso' || activeTool === 'highlighter' || activeTool === 'shape') && (
-        <div className="ml-2 border-l border-gray-200 pl-2">
-          <PenOptions />
+          {/* Trail pen */}
+          <div className="flex-shrink-0">
+            <ToolButton active={activeTool === 'trail'} title={`轨迹笔 (${shortcuts['tool:trail']})`} onClick={() => setTool('trail')}>
+              {Icons.trail}
+            </ToolButton>
+          </div>
         </div>
-      )}
 
-      <div className="ml-4 border-l border-gray-100 pl-4">
-        <BoardHeader />
+        {/* Pen/highlighter options - prevent shrinking */}
+        {(activeTool === 'pen' || activeTool === 'eraser' || activeTool === 'lasso' || activeTool === 'highlighter' || activeTool === 'shape') && (
+          <div className="ml-2 border-l border-gray-200 pl-2 flex-shrink-0 h-8 flex items-center">
+            <PenOptions />
+          </div>
+        )}
+
+        {/* Title area - prevent shrinking and wrapping */}
+        <div className="ml-4 border-l border-gray-100 pl-4 flex-shrink-0 whitespace-nowrap">
+          <BoardHeader />
+        </div>
       </div>
 
-      <div className="flex-1" />
+      {/* Fixed action area on the right */}
+      <div className="flex items-center gap-1 ml-4 border-l border-gray-100 pl-4 flex-shrink-0 bg-white shadow-[-10px_0_10px_-5px_rgba(255,255,255,0.8)]">
+        {/* Background selector */}
+        <BackgroundButton />
 
-      {/* Background selector */}
-      <BackgroundButton />
+        {/* Lock selected */}
+        <ToolButton title="锁定/解锁选中元素" onClick={onToggleLock}>
+          {Icons.lock}
+        </ToolButton>
 
-      {/* Lock selected */}
-      <ToolButton title="锁定/解锁选中元素" onClick={onToggleLock}>
-        {Icons.lock}
-      </ToolButton>
+        <div className="border-l border-gray-200 mx-1 h-6" />
 
-      <div className="border-l border-gray-200 mx-1 h-6" />
+        {/* Image insert */}
+        <ToolButton title="插入图片" onClick={handleOpenImage}>
+          {Icons.image}
+        </ToolButton>
 
-      {/* Image insert */}
-      <ToolButton title="插入图片" onClick={handleOpenImage}>
-        {Icons.image}
-      </ToolButton>
+        {/* Import JSON */}
+        <ToolButton title="导入JSON" onClick={onImportJson}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
+            <path d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+          </svg>
+        </ToolButton>
 
-      {/* Import JSON */}
-      <ToolButton title="导入JSON" onClick={onImportJson}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
-          <path d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-        </svg>
-      </ToolButton>
+        {/* Export PDF */}
+        <ToolButton title="导出 PDF" onClick={onExportPdf}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="12" y1="12" x2="12" y2="17" />
+            <polyline points="9 15 12 18 15 15" />
+          </svg>
+        </ToolButton>
 
-      {/* Export PDF */}
-      <ToolButton title="导出 PDF" onClick={onExportPdf}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
-          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-          <polyline points="14 2 14 8 20 8" />
-          <line x1="12" y1="12" x2="12" y2="17" />
-          <polyline points="9 15 12 18 15 15" />
-        </svg>
-      </ToolButton>
+        {/* Presentation mode */}
+        <ToolButton title={`演示模式 (${shortcuts['action:presentation']})`} active={presentationMode} onClick={togglePresentation}>
+          {Icons.presentation}
+        </ToolButton>
 
-      {/* Presentation mode */}
-      <ToolButton title={`演示模式 (${shortcuts['action:presentation']})`} active={presentationMode} onClick={togglePresentation}>
-        {Icons.presentation}
-      </ToolButton>
+        <div className="border-l border-gray-200 mx-1 h-6" />
 
-      <div className="border-l border-gray-200 mx-1 h-6" />
+        {/* Undo / Redo / Clear */}
+        <ToolButton title={`撤销 (${shortcuts['action:undo']})`} onClick={onUndo}>
+          {Icons.undo}
+        </ToolButton>
+        <ToolButton title={`重做 (${shortcuts['action:redo']})`} onClick={onRedo}>
+          {Icons.redo}
+        </ToolButton>
+        <ToolButton title="清空画布" onClick={onClear} danger>
+          {Icons.trash}
+        </ToolButton>
 
-      {/* Undo / Redo / Clear */}
-      <ToolButton title={`撤销 (${shortcuts['action:undo']})`} onClick={onUndo}>
-        {Icons.undo}
-      </ToolButton>
-      <ToolButton title={`重做 (${shortcuts['action:redo']})`} onClick={onRedo}>
-        {Icons.redo}
-      </ToolButton>
-      <ToolButton title="清空画布" onClick={onClear} danger>
-        {Icons.trash}
-      </ToolButton>
+        <div className="border-l border-gray-200 mx-1 h-6" />
 
-      <div className="border-l border-gray-200 mx-1 h-6" />
-
-      {/* Settings */}
-      <ToolButton title="设置" onClick={onOpenSettings}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
-          <circle cx="12" cy="12" r="3" />
-          <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
-        </svg>
-      </ToolButton>
+        {/* Settings */}
+        <ToolButton title="设置" onClick={onOpenSettings}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
+          </svg>
+        </ToolButton>
+      </div>
     </div>
   )
 }

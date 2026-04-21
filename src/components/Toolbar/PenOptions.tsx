@@ -9,7 +9,12 @@ const PRESET_COLORS = [
 const WIDTHS = [2, 4, 8, 14]
 
 export function PenOptions() {
-  const { activeTool, penOptions, setPenColor, setPenWidth, smoothStroke, setSmoothStroke, calligraphyMode, setCalligraphyMode } = useToolStore(
+  const { 
+    activeTool, penOptions, setPenColor, setPenWidth, 
+    smoothStroke, setSmoothStroke, 
+    calligraphyMode, setCalligraphyMode,
+    hwrMode, setHwrMode
+  } = useToolStore(
     useShallow((s) => ({
       activeTool: s.activeTool,
       penOptions: s.penOptions,
@@ -18,7 +23,9 @@ export function PenOptions() {
       smoothStroke: s.smoothStroke,
       setSmoothStroke: s.setSmoothStroke,
       calligraphyMode: s.calligraphyMode,
-      setCalligraphyMode: s.setCalligraphyMode
+      setCalligraphyMode: s.setCalligraphyMode,
+      hwrMode: s.hwrMode,
+      setHwrMode: s.setHwrMode
     }))
   )
 
@@ -89,8 +96,24 @@ export function PenOptions() {
         ))}
       </div>
 
-      {/* Smooth stroke & Calligraphy toggles */}
+      {/* Smooth stroke & Calligraphy & HWR toggles */}
       <div className="flex border-l border-gray-200 pl-2 gap-1">
+        <button
+          title={hwrMode ? '智能识别转书法体：开启（点击关闭）' : '智能识别转书法体：关闭（点击开启）'}
+          onClick={() => setHwrMode(!hwrMode)}
+          className={[
+            'flex items-center gap-1 px-2 h-7 rounded-md text-xs font-medium transition-colors select-none',
+            hwrMode
+              ? 'bg-amber-100 text-amber-700'
+              : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'
+          ].join(' ')}
+        >
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M2 3h8M2 6h8M2 9h5" strokeLinecap="round" />
+            <path d="M10 9l-1.5-1.5L10 6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          智能识别
+        </button>
         <button
           title={smoothStroke ? '基础平滑：开启（点击关闭）' : '基础平滑：关闭（点击开启）'}
           onClick={() => setSmoothStroke(!smoothStroke)}
