@@ -8,6 +8,9 @@ import { useShortcutStore, matchesShortcut, type ShortcutAction } from '../../st
 import type { BackgroundType, ToolType } from '../../types'
 import { CalligraphyBrush } from './CalligraphyBrush'
 
+// Global internal clipboard for Ctrl+C/Ctrl+V within TBoard
+let appClipboard: fabric.Object | null = null;
+
 /* History stack for undo/redo */
 const MAX_HISTORY = 50
 
@@ -117,6 +120,8 @@ export function useCanvas(
   const updateBoardCanvas = useBoardStore(s => s.updateBoardCanvas)
   const loadedIdRef = useRef<string | null>(null)
 
+  const mousePosRef = useRef({ x: 0, y: 0 })
+
   /* ---------- Init canvas ---------- */
   useEffect(() => {
     if (!canvasEl.current) return
@@ -131,6 +136,16 @@ export function useCanvas(
 
     fabricRef.current = canvas
     loadedIdRef.current = null // Reset on new ID
+
+    // Initialize mouse position to center
+    const vptCenter = canvas.getVpCenter()
+    mousePosRef.current = { x: vptCenter.x, y: vptCenter.y }
+
+    // Track mouse position for pasting
+    canvas.on('mouse:move', (opt) => {
+      const pointer = canvas.getScenePoint(opt.e)
+      mousePosRef.current = { x: pointer.x, y: pointer.y }
+    })
 
     // Load board data if it's already available in store
     if (activeBoard?.id === activeBoardId && activeBoard.canvasJSON) {
@@ -278,8 +293,8 @@ export function useCanvas(
 
     if (activeTool === 'text') {
       canvas.isDrawingMode = false
-      const handleTextClick = (e: fabric.TPointerEventInfo) => {
-        const pointer = canvas.getScenePoint(e.e as MouseEvent)
+      const handleTextClick = (opt: fabric.TPointerEventInfo) => {
+        const pointer = opt.scenePoint
         const textbox = new fabric.Textbox('输入文字', {
           left: pointer.x,
           top: pointer.y,
@@ -306,8 +321,7 @@ export function useCanvas(
       
       let isErasing = false
 
-      const eraseObjectUnderPointer = (e: MouseEvent) => {
-        const pointer = canvas.getScenePoint(e)
+      const eraseObjectAtPointer = (pointer: fabric.Point) => {
         const targets = canvas.getObjects().filter(
           obj => obj.containsPoint(pointer) && obj.type !== 'image' && obj.type !== 'Image'
         )
@@ -318,15 +332,20 @@ export function useCanvas(
       }
 
       const onEraserDown = (opt: fabric.TPointerEventInfo) => {
-        const e = opt.e as MouseEvent
-        if (spaceHeldRef.current || e.button === 1) return
+        const e = opt.e as PointerEvent
+        // Only trigger eraser for primary button (usually 0) or touch/pen tip
+        // Skip if Space is held (pan) or it's a mouse middle-click (pan)
+        const isMiddleButton = e.button === 1
+        const isMouse = e.pointerType === 'mouse'
+        if (spaceHeldRef.current || (isMiddleButton && isMouse)) return
+
         isErasing = true
-        eraseObjectUnderPointer(e)
+        eraseObjectAtPointer(opt.scenePoint)
       }
 
       const onEraserMove = (opt: fabric.TPointerEventInfo) => {
         if (!isErasing) return
-        eraseObjectUnderPointer(opt.e as MouseEvent)
+        eraseObjectAtPointer(opt.scenePoint)
       }
 
       const onEraserUp = () => {
@@ -355,17 +374,19 @@ export function useCanvas(
       let trailPath: fabric.Polyline | null = null
 
       const onLassoDown = (opt: fabric.TPointerEventInfo) => {
-        const e = opt.e as MouseEvent
-        if (spaceHeldRef.current || e.button === 1) return
+        const e = opt.e as PointerEvent
+        const isMiddleButton = e.button === 1
+        const isMouse = e.pointerType === 'mouse'
+        if (spaceHeldRef.current || (isMiddleButton && isMouse)) return
+
         isDrawing = true
         trailPoints.length = 0
-        const pointer = canvas.getScenePoint(e)
-        trailPoints.push({ x: pointer.x, y: pointer.y })
+        trailPoints.push({ x: opt.scenePoint.x, y: opt.scenePoint.y })
       }
 
       const onLassoMove = (opt: fabric.TPointerEventInfo) => {
         if (!isDrawing) return
-        const pointer = canvas.getScenePoint(opt.e as MouseEvent)
+        const pointer = opt.scenePoint
         trailPoints.push({ x: pointer.x, y: pointer.y })
         
         if (trailPath) canvas.remove(trailPath)
@@ -471,17 +492,19 @@ export function useCanvas(
       let trailPath: fabric.Path | null = null
 
       const onTrailDown = (opt: fabric.TPointerEventInfo) => {
-        const e = opt.e as MouseEvent
-        if (spaceHeldRef.current || e.button === 1) return
+        const e = opt.e as PointerEvent
+        const isMiddleButton = e.button === 1
+        const isMouse = e.pointerType === 'mouse'
+        if (spaceHeldRef.current || (isMiddleButton && isMouse)) return
+
         isDrawing = true
         trailPoints.length = 0
-        const pointer = canvas.getScenePoint(e)
-        trailPoints.push(new fabric.Point(pointer.x, pointer.y))
+        trailPoints.push(new fabric.Point(opt.scenePoint.x, opt.scenePoint.y))
       }
 
       const onTrailMove = (opt: fabric.TPointerEventInfo) => {
         if (!isDrawing) return
-        const pointer = canvas.getScenePoint(opt.e as MouseEvent)
+        const pointer = opt.scenePoint
         trailPoints.push(new fabric.Point(pointer.x, pointer.y))
         if (trailPath) canvas.remove(trailPath)
         if (trailPoints.length < 2) return
@@ -546,7 +569,7 @@ export function useCanvas(
       canvas.defaultCursor = 'none'
 
       const onLaserMove = (opt: fabric.TPointerEventInfo) => {
-        const pointer = canvas.getScenePoint(opt.e as MouseEvent)
+        const pointer = opt.scenePoint
         if (!laserDotRef.current) {
           const dot = new fabric.Circle({
             radius: 8,
@@ -592,15 +615,18 @@ export function useCanvas(
       canvas.selection = false
 
       const onShapeDown = (opt: fabric.TPointerEventInfo) => {
-        const e = opt.e as MouseEvent
-        if (spaceHeldRef.current || e.button === 1) return // let pan handle it
-        const pointer = canvas.getScenePoint(e)
+        const e = opt.e as PointerEvent
+        const isMiddleButton = e.button === 1
+        const isMouse = e.pointerType === 'mouse'
+        if (spaceHeldRef.current || (isMiddleButton && isMouse)) return // let pan handle it
+
+        const pointer = opt.scenePoint
         shapeStartRef.current = { x: pointer.x, y: pointer.y }
       }
 
       const onShapeMove = (opt: fabric.TPointerEventInfo) => {
         if (!shapeStartRef.current) return
-        const pointer = canvas.getScenePoint(opt.e as MouseEvent)
+        const pointer = opt.scenePoint
         const { x: sx, y: sy } = shapeStartRef.current
         const x = Math.min(sx, pointer.x)
         const y = Math.min(sy, pointer.y)
@@ -865,9 +891,14 @@ export function useCanvas(
     if (!canvas) return
 
     const handleMouseDown = (opt: fabric.TPointerEventInfo) => {
-      const e = opt.e as MouseEvent
-      // Space+left-click or middle mouse button → start pan
-      if (spaceHeldRef.current || e.button === 1) {
+      const e = opt.e as PointerEvent
+      // Space+left-click or middle mouse button -> start pan
+      // We only allow middle-click panning for mouse to avoid pen tip misinterpretation
+      const isSpace = spaceHeldRef.current
+      const isMiddleButton = e.button === 1
+      const isMouse = e.pointerType === 'mouse'
+
+      if (isSpace || (isMiddleButton && isMouse)) {
         isPanningRef.current = true
         lastPanPosRef.current = { x: e.clientX, y: e.clientY }
         canvas.selection = false
@@ -963,6 +994,66 @@ export function useCanvas(
       }
       if (matchesShortcut(e, shortcuts['action:escape']) && useToolStore.getState().presentationMode) {
         useToolStore.getState().togglePresentation()
+        return
+      }
+
+      // Copy & Paste
+      if (matchesShortcut(e, shortcuts['action:copy'])) {
+        const canvas = fabricRef.current
+        if (canvas) {
+          const active = canvas.getActiveObject()
+          if (active) {
+            e.preventDefault()
+            active.clone().then((cloned) => {
+              appClipboard = cloned
+            })
+          }
+        }
+        return
+      }
+      if (matchesShortcut(e, shortcuts['action:paste'])) {
+        const canvas = fabricRef.current
+        if (canvas && appClipboard) {
+          e.preventDefault()
+          appClipboard.clone().then((clonedObj) => {
+            canvas.discardActiveObject()
+            
+            // Position at mouse cursor
+            const mousePos = mousePosRef.current
+            const center = clonedObj.getCenterPoint()
+            const dx = mousePos.x - center.x
+            const dy = mousePos.y - center.y
+
+            clonedObj.set({
+              left: clonedObj.left + dx,
+              top: clonedObj.top + dy,
+              evented: true,
+            })
+
+            if (clonedObj.type === 'activeselection') {
+              const activeSelection = clonedObj as fabric.ActiveSelection;
+              activeSelection.canvas = canvas;
+              activeSelection.setCoords();
+              const objects = activeSelection.removeAll();
+              objects.forEach((obj) => {
+                canvas.add(obj);
+              });
+              const newSelection = new fabric.ActiveSelection(objects, { canvas });
+              newSelection.setCoords();
+              canvas.setActiveObject(newSelection);
+            } else {
+              canvas.add(clonedObj);
+              canvas.setActiveObject(clonedObj);
+            }
+            
+            // shift the clipboard item slightly for the next paste overlay
+            appClipboard!.top += 20;
+            appClipboard!.left += 20;
+            
+            canvas.requestRenderAll()
+            // Assume canvas has fired internal add events so history should track it
+          });
+        }
         return
       }
 

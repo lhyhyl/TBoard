@@ -5,6 +5,7 @@ export interface Category {
   name: string
   color: string
   createdAt: number
+  collapsed?: boolean
 }
 
 /** Lightweight board metadata stored in index.json (no canvasJSON). */

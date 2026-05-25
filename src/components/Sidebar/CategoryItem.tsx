@@ -15,7 +15,7 @@ interface CategoryItemProps {
 export function CategoryItem({ category, editingBoardId, onSelectBoard, onCreateBoard, onEditDone }: CategoryItemProps) {
   const { boardMetas, activeBoardId, updateCategory, deleteCategory, updateBoardMeta } =
     useBoardStore()
-  const [collapsed, setCollapsed] = useState(false)
+  const collapsed = !!category.collapsed
   const [editing, setEditing] = useState(false)
   const [name, setName] = useState(category.name)
   const [dragOver, setDragOver] = useState(false)
@@ -28,6 +28,10 @@ export function CategoryItem({ category, editingBoardId, onSelectBoard, onCreate
   function commitRename() {
     if (name.trim()) updateCategory(category.id, { name: name.trim() })
     setEditing(false)
+  }
+
+  function toggleCollapsed() {
+    updateCategory(category.id, { collapsed: !collapsed })
   }
 
   async function handleExportAllPdf() {
@@ -73,13 +77,13 @@ export function CategoryItem({ category, editingBoardId, onSelectBoard, onCreate
           const boardId = e.dataTransfer.getData('text/board-id')
           if (boardId) {
             updateBoardMeta(boardId, { categoryId: category.id })
-            setCollapsed(false)
+            updateCategory(category.id, { collapsed: false })
           }
         }}
       >
         {/* Collapse arrow */}
         <button
-          onClick={() => setCollapsed((c) => !c)}
+          onClick={toggleCollapsed}
           className="text-gray-400 hover:text-gray-600 p-0.5 flex-shrink-0 transition-transform"
           style={{ transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}
         >
@@ -93,7 +97,7 @@ export function CategoryItem({ category, editingBoardId, onSelectBoard, onCreate
 
         {/* Name */}
         <button
-          onClick={() => setCollapsed((c) => !c)}
+          onClick={toggleCollapsed}
           className="flex-1 text-left text-xs font-medium text-gray-600 truncate"
         >
           {editing ? (

@@ -64,15 +64,35 @@ export function Sidebar() {
           </button>
           <span className="text-sm font-semibold text-gray-700 truncate">白板</span>
         </div>
-        <button
-          onClick={() => handleCreateBoard(null)}
-          title="新建白板"
-          className="text-gray-400 hover:text-indigo-600 transition-colors p-1 rounded hover:bg-gray-100"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4">
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-        </button>
+        <div className="flex items-center gap-0.5">
+          <button
+            onClick={() => useBoardStore.getState().toggleCollapseAll(false)}
+            title="全部展开"
+            className="text-gray-400 hover:text-indigo-600 transition-colors p-1 rounded hover:bg-gray-100"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-3.5 h-3.5">
+              <path d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          <button
+            onClick={() => useBoardStore.getState().toggleCollapseAll(true)}
+            title="全部折叠"
+            className="text-gray-400 hover:text-indigo-600 transition-colors p-1 rounded hover:bg-gray-100"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-3.5 h-3.5">
+              <path d="M5 15l7-7 7 7" />
+            </svg>
+          </button>
+          <button
+            onClick={() => handleCreateBoard(null)}
+            title="新建白板"
+            className="text-gray-400 hover:text-indigo-600 transition-colors p-1 rounded hover:bg-gray-100"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       {/* Board list + categories */}

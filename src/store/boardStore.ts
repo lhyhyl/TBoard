@@ -26,6 +26,7 @@ interface BoardState {
   createCategory: (name: string, color?: string) => Category
   updateCategory: (id: string, patch: Partial<Category>) => void
   deleteCategory: (id: string) => void
+  toggleCollapseAll: (collapsed: boolean) => void
   importFromJson: () => Promise<number>
   importFromFolder: () => Promise<number>
 }
@@ -315,6 +316,13 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     set((s) => ({
       categories: s.categories.filter((c) => c.id !== id),
       boardMetas: s.boardMetas.map((m) => (m.categoryId === id ? { ...m, categoryId: null } : m))
+    }))
+    saveIndexDebounced(get)
+  },
+
+  toggleCollapseAll: (collapsed) => {
+    set((s) => ({
+      categories: s.categories.map((c) => ({ ...c, collapsed }))
     }))
     saveIndexDebounced(get)
   }

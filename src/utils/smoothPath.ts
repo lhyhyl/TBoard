@@ -92,3 +92,41 @@ export function smoothFabricPath(pathData: PathCmd[], iterations = 2): PathCmd[]
   const smoothed = chaikin(points, iterations)
   return pointsToPathData(smoothed)
 }
+
+/**
+ * Calculates whether an array of 2D points is roughly a straight line.
+ * It checks the perpendicular distance of each intermediate point from the line 
+ * extending from the first to the last point.
+ * @param points Array of [x, y] coordinates (or objects containing x, y)
+ * @param tolerance Max perpendicular distance allowed
+ */
+export function isStraightLinePoints(points: { x: number; y: number }[] | [number, number][], tolerance = 15): boolean {
+  if (points.length <= 2) return true;
+
+  const getPt = (p: any): { x: number; y: number } => {
+    if (Array.isArray(p)) return { x: p[0], y: p[1] };
+    return { x: p.x, y: p.y };
+  };
+
+  const startPt = getPt(points[0]);
+  const endPt = getPt(points[points.length - 1]);
+
+  // If the line is practically a single dot, no need to straighten
+  const dx = endPt.x - startPt.x;
+  const dy = endPt.y - startPt.y;
+  const lineLengthSq = dx * dx + dy * dy;
+  if (lineLengthSq < 1e-4) return false;
+
+  for (let i = 1; i < points.length - 1; i++) {
+    const pt = getPt(points[i]);
+    // Calculate perpendicular distance from point to the line
+    const crossProduct = Math.abs((endPt.y - startPt.y) * pt.x - (endPt.x - startPt.x) * pt.y + endPt.x * startPt.y - endPt.y * startPt.x);
+    const distance = crossProduct / Math.sqrt(lineLengthSq);
+
+    if (distance > tolerance) {
+      return false; // Point deviates too much -> not a straight line
+    }
+  }
+
+  return true;
+}

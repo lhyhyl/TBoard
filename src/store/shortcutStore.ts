@@ -5,6 +5,7 @@ export type ShortcutAction =
   | 'tool:text' | 'tool:shape' | 'tool:laser' | 'tool:trail'
   | 'action:undo' | 'action:redo' | 'action:delete'
   | 'action:presentation' | 'action:escape'
+  | 'action:copy' | 'action:paste'
 
 export type ShortcutMap = Record<ShortcutAction, string>
 
@@ -23,6 +24,8 @@ export const DEFAULT_SHORTCUTS: ShortcutMap = {
   'action:delete': 'Delete',
   'action:presentation': 'F11',
   'action:escape': 'Escape',
+  'action:copy': 'Ctrl+C',
+  'action:paste': 'Ctrl+V',
 }
 
 export const ACTION_LABELS: Record<ShortcutAction, string> = {
@@ -40,6 +43,8 @@ export const ACTION_LABELS: Record<ShortcutAction, string> = {
   'action:delete': '删除',
   'action:presentation': '演示模式',
   'action:escape': '退出演示',
+  'action:copy': '复制',
+  'action:paste': '粘贴',
 }
 
 const STORAGE_KEY = 'writeboard-shortcuts'
